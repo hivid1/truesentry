@@ -1,64 +1,126 @@
 import { describe, it, expect } from "vitest";
-import { BlastRadiusCalculator } from "../src/hitl/blastRadius.js";
+import { HitlGateEngine, CryptographicIntegrityError } from "../src/hitl/gate.js";
 import { PolicyEngine } from "../src/hitl/policies.js";
-import { HitlGateEngine } from "../src/hitl/gate.js";
 import { EventBroadcaster } from "../src/events/emitter.js";
-import { IncidentMerkleTree } from "../src/storage/merkle.js";
+import { PostgresMcpServer } from "@truesentry/mcp-servers";
 
-describe("Core TrueForge Harness & HITL Tests", () => {
-  it("calculates blast radius risk scores deterministically", () => {
-    const score = BlastRadiusCalculator.calculate({
-      affectedServicesCount: 4,
-      lockDurationMs: 3200,
-      isDestructive: false,
-    });
-    expect(score).toBeGreaterThan(50);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it("evaluates policy-as-code decisions", () => {
-    expect(PolicyEngine.evaluate("DROP DATABASE prod", true, 90)).toBe("HARD_BLOCK");
-    expect(PolicyEngine.evaluate("ROLLBACK_MIGRATION", true, 74)).toBe("REQUIRE_APPROVAL");
-    expect(PolicyEngine.evaluate("GET_TELEMETRY", false, 5)).toBe("ALLOW_AUTONOMOUS");
-  });
-
-  it("gating engine resolves cryptographic approvals", async () => {
+describe("TrueForge Cryptographic HITL Safety Gate Tests", () => {
+  it("generates approval request and issues cryptographic token upon human sign-off", async () => {
     const broadcaster = new EventBroadcaster();
     const gate = new HitlGateEngine(broadcaster);
 
-    const approvalPromise = gate.requestApproval("ses_123", "inc_001", {
+    const promise = gate.requestApproval("ses_test_1", "scenario_1", {
       severity: "CRITICAL",
-      target: { system: "Postgres", resource: "orders", actionType: "ROLLBACK" },
-      blastRadius: { riskScore: 74, estimatedDowntimeSeconds: 3, affectedServices: ["checkout"], dataLossRisk: false },
-      diff: { language: "sql", before: "A", after: "B" },
-      sandboxProof: { sandboxId: "sbx_1", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 14 },
+      target: {
+        system: "PostgreSQL",
+        resource: "orders_db.public.orders",
+        actionType: "ROLLBACK_MIGRATION",
+      },
+      blastRadius: {
+        score: 74,
+        category: "HIGH",
+        affectedServices: ["checkout-service", "orders-db"],
+        estimatedRecoveryMinutes: 2.5,
+        riskFactors: ["Schema alteration", "Lock contention"],
+        isDestructive: false,
+        isIrreversible: true,
+      },
+      diff: {
+        before: "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);",
+        after: "ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_user;\nCREATE INDEX CONCURRENTLY IF NOT EXISTS idx_orders_user_id ON orders(user_id);",
+      },
+      sandboxProof: {
+        sandboxId: "sbx_test_1",
+        testsRun: 48,
+        testsPassed: 48,
+        lockDurationMeasuredMs: 0.14,
+      },
     });
 
-    // Simulate event listener catching approvalId
-    let capturedId = "";
-    broadcaster.subscribe("ses_123", (evt) => {
-      if (evt.type === "APPROVAL_REQUEST") {
-        capturedId = (evt.payload as any).approvalId;
-      }
-    });
+    const pending = [...(gate as any).pendingApprovals.keys()][0];
+    expect(pending).toBeDefined();
 
-    // Wait a tick and resolve
-    await new Promise((r) => setTimeout(r, 50));
-    const result = gate.resolveApproval(capturedId, "APPROVE");
-    expect(result.success).toBe(true);
+    const resolveRes = gate.resolveApproval(pending, "APPROVE");
+    expect(resolveRes.success).toBe(true);
+    expect(resolveRes.token).toBeDefined();
 
-    const approved = await approvalPromise;
+    const approved = await promise;
     expect(approved).toBe(true);
   });
 
-  it("computes tamper-evident Merkle root for incident ledger", () => {
-    const root = IncidentMerkleTree.computeRoot([
-      { eventId: "e1", type: "ALERT", timestamp: 100 },
-      { eventId: "e2", type: "BISECT", timestamp: 200 },
-      { eventId: "e3", type: "APPROVAL", timestamp: 300 },
-    ]);
-    expect(root).toBeDefined();
-    expect(typeof root).toBe("string");
-    expect(root.length).toBe(64); // SHA-256 hex string
+  it("aborts execution cleanly when human operator rejects", async () => {
+    const broadcaster = new EventBroadcaster();
+    const gate = new HitlGateEngine(broadcaster);
+
+    const promise = gate.requestApproval("ses_test_2", "scenario_1", {
+      severity: "CRITICAL",
+      target: { system: "PostgreSQL", resource: "orders_db", actionType: "ROLLBACK_MIGRATION" },
+      blastRadius: { score: 74, category: "HIGH", affectedServices: [], estimatedRecoveryMinutes: 2, riskFactors: [], isDestructive: false, isIrreversible: true },
+      diff: { before: "a", after: "b" },
+      sandboxProof: { sandboxId: "s", testsRun: 10, testsPassed: 10, lockDurationMeasuredMs: 1 },
+    });
+
+    const pending = [...(gate as any).pendingApprovals.keys()][0];
+    gate.resolveApproval(pending, "REJECT");
+
+    const approved = await promise;
+    expect(approved).toBe(false);
+  });
+
+  it("CRITICAL: Detects tampered SQL payload and halts execution with CryptographicIntegrityError", async () => {
+    const broadcaster = new EventBroadcaster();
+    const gate = new HitlGateEngine(broadcaster);
+    const postgres = new PostgresMcpServer((token, sql) => gate.verifyAndConsumeExecution(token, sql));
+
+    const authorizedSql = "ALTER TABLE orders DROP CONSTRAINT fk_orders_user;\nCREATE INDEX CONCURRENTLY idx_user ON orders(user_id);";
+
+    gate.requestApproval("ses_test_3", "scenario_1", {
+      severity: "CRITICAL",
+      target: { system: "PostgreSQL", resource: "orders", actionType: "ROLLBACK" },
+      blastRadius: { score: 50, category: "MEDIUM", affectedServices: [], estimatedRecoveryMinutes: 1, riskFactors: [], isDestructive: false, isIrreversible: true },
+      diff: { before: "x", after: authorizedSql },
+      sandboxProof: { sandboxId: "s", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 0.1 },
+    });
+
+    const pendingId = [...(gate as any).pendingApprovals.keys()][0];
+    const { token } = gate.resolveApproval(pendingId, "APPROVE");
+
+    // Attempt 1: Tampered SQL with malicious DROP TABLE
+    const maliciousSql = "DROP TABLE orders CASCADE;";
+    await expect(
+      postgres.callTool("execute_remediation_sql", {
+        sql: maliciousSql,
+        approvalNonce: token!,
+      })
+    ).rejects.toThrow(CryptographicIntegrityError);
+
+    // Attempt 2: Exact authorized SQL succeeds
+    const successRes = await postgres.callTool("execute_remediation_sql", {
+      sql: authorizedSql,
+      approvalNonce: token!,
+    });
+    expect(successRes.content[0].text).toContain("SUCCESS");
+
+    // Attempt 3: Replay attack with already-consumed token is rejected
+    await expect(
+      postgres.callTool("execute_remediation_sql", {
+        sql: authorizedSql,
+        approvalNonce: token!,
+      })
+    ).rejects.toThrow(/Replay attack detected/);
+  });
+
+  it("evaluates Policy Engine rules to hard-block dangerous DDL and require approvals for schema changes", () => {
+    const blocked1 = PolicyEngine.evaluate("DROP DATABASE production_db;");
+    expect(blocked1.action).toBe("HARD_BLOCK");
+
+    const blocked2 = PolicyEngine.evaluate("DELETE FROM customers;");
+    expect(blocked2.action).toBe("HARD_BLOCK");
+
+    const gated = PolicyEngine.evaluate("ALTER TABLE orders ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id);");
+    expect(gated.action).toBe("REQUIRE_APPROVAL");
+
+    const safe = PolicyEngine.evaluate("CREATE INDEX CONCURRENTLY idx_orders_user ON orders(user_id);");
+    expect(safe.action).toBe("ALLOW");
   });
 });
