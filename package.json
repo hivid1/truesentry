@@ -1,0 +1,33 @@
+{
+  "name": "truesentry-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrueSentry: Autonomous SRE Incident Responder & Safe Self-Healing Agent on TrueForge",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspace=@truesentry/mcp-servers && npm run build --workspace=@truesentry/sandbox && npm run build --workspace=@truesentry/scenarios && npm run build --workspace=@truesentry/core && npm run build --workspace=@truesentry/cli && npm run build --workspace=@truesentry/command-center",
+    "test": "npm run test --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "demo": "node scripts/run-demo.js",
+    "start:harness": "npm run start --workspace=@truesentry/core",
+    "start:ui": "npm run dev --workspace=@truesentry/command-center"
+  },
+  "keywords": [
+    "trueforge",
+    "agent-harness",
+    "mcp",
+    "sre",
+    "autonomous-agent",
+    "qodo"
+  ],
+  "author": "TrueSentry Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

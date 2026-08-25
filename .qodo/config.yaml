@@ -1,0 +1,29 @@
+version: "1.0"
+project_name: "truesentry"
+
+review:
+  auto_review: true
+  enable_suggestions: true
+  strict_mode: true
+  focus_areas:
+    - security
+    - performance
+    - type_safety
+    - error_handling
+    - test_coverage
+  
+  guidelines:
+    - "Enforce strict TypeScript types with zero 'any' usage."
+    - "Ensure all MCP tool inputs and outputs validate against Zod schemas."
+    - "Verify that all dangerous or irreversible actions pass through the HITL approval gate."
+    - "All asynchronous sandbox operations must have timeouts and error recovery."
+    - "Every new module must include accompanying unit tests with >85% coverage."
+
+pr_description:
+  auto_describe: true
+  include_test_instructions: true
+  include_impact_analysis: true
+
+tests:
+  framework: "vitest"
+  generate_edge_case_tests: true

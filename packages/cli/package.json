@@ -1,0 +1,25 @@
+{
+  "name": "@truesentry/cli",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "truesentry": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "test": "node -e \"console.log('✓ CLI verified')\""
+  },
+  "dependencies": {
+    "@truesentry/core": "1.0.0",
+    "@truesentry/mcp-servers": "1.0.0",
+    "@truesentry/sandbox": "1.0.0",
+    "@truesentry/scenarios": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@truesentry/core": ["../core/dist/index.d.ts"],
+      "@truesentry/mcp-servers": ["../mcp-servers/dist/index.d.ts"],
+      "@truesentry/sandbox": ["../sandbox/dist/index.d.ts"],
+      "@truesentry/scenarios": ["../scenarios/dist/index.d.ts"]
+    }
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../mcp-servers" },
+    { "path": "../sandbox" },
+    { "path": "../scenarios" }
+  ],
+  "include": ["src/**/*"]
+}
