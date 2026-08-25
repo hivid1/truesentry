@@ -58,7 +58,13 @@ graph TD
 
 ### Run the Live Demo (One Command)
 ```bash
-git clone https://github.com/hivid1/truesentry
+# Clone using GitHub CLI:
+gh repo clone hivid1/truesentry
+
+# Or clone via HTTPS:
+git clone https://github.com/hivid1/truesentry.git
+
+# Navigate and start the zero-config demo:
 cd truesentry
 npm install
 npm run build
