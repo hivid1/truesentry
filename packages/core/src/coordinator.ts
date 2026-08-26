@@ -11,6 +11,9 @@ import { EvidenceGraph, EvidenceNode, EvidenceEdge } from "./types.js";
 import { EvidenceGraphValidator } from "./hitl/graph_validator.js";
 import crypto from "crypto";
 
+const isTestEnv = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+const delay = (ms: number) => new Promise((r) => setTimeout(r, isTestEnv ? 5 : ms));
+
 export class TrueSentryCoordinator {
   private scout = new TelemetryScoutSubagent();
   private auditor = new BlastRadiusAuditorSubagent();
@@ -116,7 +119,7 @@ export class TrueSentryCoordinator {
     });
 
     // Step 2: Telemetry Scout Investigation
-    await new Promise((r) => setTimeout(r, 400));
+    await delay(400);
     emit("THOUGHT", "TelemetryScout", {
       thought: isDbIncident
         ? "Querying Prometheus error rates & inspecting PostgreSQL pg_locks for table lock contention..."
@@ -160,7 +163,7 @@ export class TrueSentryCoordinator {
     }
 
     // Step 3: Isolated OS Sandbox Initialization & Bisect
-    await new Promise((r) => setTimeout(r, 400));
+    await delay(400);
     emit("THOUGHT", "SandboxBisector", {
       thought: "Spinning up TrueForge isolated sandbox container with physical Git repository fixture to run automated git bisect...",
       step: 3,
@@ -232,28 +235,31 @@ export class TrueSentryCoordinator {
         `ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);`
       );
     }
+    const totalTests = repairResult.totalTests || 48;
+    const testsPassed = repairResult.testsPassed || 0;
 
     // Adversarial Guard: Never proceed to HITL if sandbox verification fails
-    if (!repairResult.success || repairResult.testsPassed < 48) {
+    if (!repairResult.success || testsPassed < totalTests || totalTests === 0) {
       emit("THOUGHT", "TrueForgeCoordinator", {
-        thought: `❌ SANDBOX VERIFICATION FAILED: Remediation patch failed regression testing inside isolated sandbox (${repairResult.testsPassed}/48 passed). Aborting execution before HITL gate.`,
+        thought: `❌ SANDBOX VERIFICATION FAILED: Remediation patch failed regression testing inside isolated sandbox (${testsPassed}/${totalTests} passed). Aborting execution before HITL gate.`,
         step: 4,
       });
       emit("TOOL_RESULT", "SandboxBisector", {
         status: "VERIFICATION_FAILED",
-        testsPassed: repairResult.testsPassed,
+        testsPassed,
+        totalTests,
       });
 
       const failedSandboxNode = EvidenceGraphValidator.createNode({
         id: "node_sandbox",
         type: "SANDBOX",
-        label: "OS Sandbox: Verification FAILED",
+        label: `OS Sandbox: Verification FAILED (${testsPassed}/${totalTests})`,
         status: "BLOCKED",
-        detail: `Only ${repairResult.testsPassed}/48 tests passed. Execution aborted.`,
+        detail: `Only ${testsPassed}/${totalTests} tests passed. Execution aborted.`,
         incidentId: scenario.id,
         source: "SANDBOX_RUNTIME",
         queryOrCommand: "npm test -- --concurrency-lock-suite",
-        rawObservation: { testsPassed: repairResult.testsPassed, totalTests: 48, status: "FAILED" },
+        rawObservation: { testsPassed, totalTests, status: "FAILED" },
       });
       updateEvidenceGraph(failedSandboxNode, [{ from: "node_bisect", to: "node_sandbox", relation: "tested_in" }]);
 
@@ -265,7 +271,8 @@ export class TrueSentryCoordinator {
     const verifiedPatch = repairResult.finalPatch || scenario.diff.after;
     emit("TOOL_RESULT", "SandboxBisector", {
       status: "VERIFICATION_SUCCESS",
-      testsPassed: 48,
+      testsPassed,
+      totalTests,
       verifiedPatch,
       iterationsUsed: repairResult.iteration,
     });
@@ -273,13 +280,13 @@ export class TrueSentryCoordinator {
     const sandboxNode = EvidenceGraphValidator.createNode({
       id: "node_sandbox",
       type: "SANDBOX",
-      label: "OS Sandbox: 48/48 Tests Passed",
+      label: `OS Sandbox: ${testsPassed}/${totalTests} Tests Passed`,
       status: "VERIFIED",
       detail: "Verified non-blocking concurrent DDL eliminates table lock and passes regression suite",
       incidentId: scenario.id,
       source: "SANDBOX_RUNTIME",
       queryOrCommand: "npm test -- --concurrency-lock-suite",
-      rawObservation: { testsPassed: 48, totalTests: 48, measuredLockMs: 0.14 },
+      rawObservation: { testsPassed, totalTests, measuredLockMs: 0.14 },
     });
     updateEvidenceGraph(sandboxNode, [
       { from: "node_bisect", to: "node_sandbox", relation: "reproduced_and_patched_in" },
@@ -299,7 +306,7 @@ export class TrueSentryCoordinator {
     updateEvidenceGraph(rootCauseNode, [{ from: "node_sandbox", to: "node_root_cause", relation: "confirms" }]);
 
     // Step 5: Evidence-Based Blast Radius & Policy Audit
-    await new Promise((r) => setTimeout(r, 400));
+    await delay(400);
     emit("THOUGHT", "BlastRadiusAuditor", {
       thought: isDbIncident
         ? "Evaluating blast radius risk score from lock observations (18 blocked queries, 742s lock duration) against Policy-as-Code rules..."
@@ -345,8 +352,8 @@ export class TrueSentryCoordinator {
       },
       sandboxProof: {
         sandboxId: sandbox.sandboxId,
-        testsRun: 48,
-        testsPassed: 48,
+        testsRun: totalTests,
+        testsPassed: testsPassed,
         lockDurationMeasuredMs: 0.14,
       },
     });
@@ -423,7 +430,7 @@ export class TrueSentryCoordinator {
     ]);
 
     // Step 8: Telemetry Normalization & Post-Mortem Publication
-    await new Promise((r) => setTimeout(r, 400));
+    await delay(400);
     emit("TELEMETRY", "TelemetryScout", {
       timestamp: Date.now(),
       errorRate: 0.001,

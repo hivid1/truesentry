@@ -30,6 +30,13 @@ export interface HitlApprovalRequest {
   status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
+export interface RegressionSuiteResult {
+  testsPassed: number;
+  totalTests: number;
+  status: "PASSED" | "FAILED";
+  measuredLockMs?: number;
+}
+
 export type EvidenceSource =
   | "PROMETHEUS_MCP"
   | "POSTGRES_MCP"

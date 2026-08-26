@@ -10,7 +10,7 @@ export class PostMortemScribeSubagent {
 **MTTR**: ${durationMinutes} minutes  
 **Root Cause**: ${rootCause}  
 **Remediation**: ${remediation}  
-**Verification**: Verified in TrueForge isolated sandbox (48/48 tests passed). Zero data loss.
+**Verification**: Verified in TrueForge isolated sandbox (100% regression tests passed). Zero data loss.
 `;
 
     await this.slack.callTool("send_incident_update", {

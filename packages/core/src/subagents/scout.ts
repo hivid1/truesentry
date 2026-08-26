@@ -39,7 +39,13 @@ export class TelemetryScoutSubagent {
       if (alert.type === "HIGH_ERROR_RATE" || customTelemetry.hasDatabaseLock) {
         rootCauseCategory = "DATABASE_LOCK_CONTENTION";
         const locksRes = await this.postgres.callTool("inspect_table_locks", { tableName: "orders" });
-        locksData = JSON.parse(locksRes.content[0].text);
+        const rawLocks = JSON.parse(locksRes.content[0].text);
+        const activeLocksList = Array.isArray(rawLocks) ? rawLocks : rawLocks.activeLocks || [];
+        locksData = {
+          activeLocks: activeLocksList,
+          totalBlockedQueries: activeLocksList.length,
+          raw: rawLocks,
+        };
       } else if (alert.type === "MEMORY_EXHAUSTION" || customTelemetry.hasOOMKill) {
         rootCauseCategory = "CONTAINER_MEMORY_LEAK";
       } else if (alert.type === "CONNECTION_POOL_EXHAUSTED") {
@@ -88,7 +94,13 @@ export class TelemetryScoutSubagent {
     const alertSummary = JSON.stringify(alertsData);
     if (alertSummary.includes("Http5xx") || alertSummary.includes("Latency") || serviceOrAlertId.includes("checkout")) {
       const locksRes = await this.postgres.callTool("inspect_table_locks", { tableName: "orders" });
-      locksData = JSON.parse(locksRes.content[0].text);
+      const rawLocks = JSON.parse(locksRes.content[0].text);
+      const activeLocksList = Array.isArray(rawLocks) ? rawLocks : rawLocks.activeLocks || [];
+      locksData = {
+        activeLocks: activeLocksList,
+        totalBlockedQueries: activeLocksList.length,
+        raw: rawLocks,
+      };
       rootCauseCategory = "DATABASE_LOCK_CONTENTION";
     }
 

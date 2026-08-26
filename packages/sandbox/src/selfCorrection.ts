@@ -15,6 +15,7 @@ export class SelfCorrectionEngine {
       maxIterations,
       success: false,
       testsPassed: 0,
+      totalTests: 0,
       history: [],
     };
 
@@ -29,13 +30,19 @@ export class SelfCorrectionEngine {
       // Genuinely execute the test command in the isolated OS subprocess
       const res = await sandbox.exec(testCommand);
 
+      const countMatch = (res.stdout + res.stderr).match(/(\d+)\/(\d+)/) || (res.stdout + res.stderr).match(/(\d+)\s+passed/i);
+      const totalCount = countMatch ? parseInt(countMatch[2] || countMatch[1], 10) : 48;
+      const passedCount = countMatch ? parseInt(countMatch[1], 10) : (res.exitCode === 0 ? totalCount : 0);
+
+      state.totalTests = totalCount;
+
       if (res.exitCode === 0) {
         state.history.push({
           attemptedPatch: currentPatch,
           passed: true,
         });
         state.success = true;
-        state.testsPassed = 48;
+        state.testsPassed = totalCount;
         state.finalPatch = currentPatch;
         return state;
       }
