@@ -12,8 +12,9 @@ import { VoiceWarRoom } from "@/components/VoiceWarRoom";
 import { TopologyMap } from "@/components/TopologyMap";
 import { PostMortemModal } from "@/components/PostMortemModal";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
+import { EvidenceGraphViewer, EvidenceNodeUI } from "@/components/EvidenceGraphViewer";
 import { HitlApprovalRequest, AgentThoughtEvent, TelemetryPoint } from "@/types/ui";
-import { FileText, ShieldAlert } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const HARNESS_URL = "http://localhost:8790";
 
@@ -26,6 +27,7 @@ export default function CommandCenterPage() {
   const [status, setStatus] = useState<string>("ACTIVE");
   const [showPostMortem, setShowPostMortem] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+  const [evidenceNodes, setEvidenceNodes] = useState<EvidenceNodeUI[] | undefined>(undefined);
 
   const [thoughts, setThoughts] = useState<AgentThoughtEvent[]>([]);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
@@ -46,6 +48,7 @@ export default function CommandCenterPage() {
     setStatus("ACTIVE");
     setShowPostMortem(false);
     setCurrentStepIndex(1);
+    setEvidenceNodes(undefined);
 
     try {
       const res = await fetch(`${HARNESS_URL}/api/incidents/trigger`, {
@@ -93,6 +96,13 @@ export default function CommandCenterPage() {
         setTerminalLogs((prev) => [...prev, payload.text]);
       });
 
+      eventSource.addEventListener("EVIDENCE_GRAPH_UPDATE", (e: any) => {
+        const payload = JSON.parse(e.data);
+        if (payload.graph?.nodes) {
+          setEvidenceNodes(payload.graph.nodes);
+        }
+      });
+
       eventSource.addEventListener("APPROVAL_REQUEST", (e: any) => {
         const payload = JSON.parse(e.data);
         setPendingApproval(payload);
@@ -135,6 +145,11 @@ export default function CommandCenterPage() {
         severity={severity}
         isConnected={isConnected}
       />
+
+      {/* Top Real-Time Causal Evidence Graph Banner */}
+      <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-950/80">
+        <EvidenceGraphViewer nodes={evidenceNodes} currentStepIndex={currentStepIndex} />
+      </div>
 
       {/* Main 3-Column Tactical Operations Grid */}
       <main className="flex-1 grid grid-cols-12 gap-px bg-zinc-800 overflow-hidden">

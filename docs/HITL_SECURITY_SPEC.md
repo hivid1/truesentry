@@ -1,6 +1,6 @@
 # 🔐 TrueSentry Cryptographic HITL Threat Model & Security Specification
 
-> **Standard Specification**: Formally defining the Human-in-the-Loop (HITL) cryptographic authorization boundaries, AST policy engine, tamper detection, and anti-replay guarantees in TrueSentry.
+> **Core Architectural Thesis**: *"TrueSentry doesn't assume the agent is trustworthy. It makes the execution boundary trustworthy."*
 
 ---
 
@@ -8,11 +8,11 @@
 
 | Threat Vector | Attack Scenario | TrueSentry Defense Mechanism | Implementation Reference |
 | :--- | :--- | :--- | :--- |
-| **T1: Prompt Injection / Hallucination** | LLM fabricates unverified DDL (`DROP TABLE`, unindexed keys) or skips sandbox verification. | Coordinator strictly mandates sandbox test pass ($48/48$) before generating approval payload. AST Policy Engine blocks forbidden DDL/DML. | [`packages/core/src/coordinator.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/coordinator.ts)<br>[`packages/core/src/hitl/policies.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/policies.ts) |
-| **T2: In-Flight SQL Payload Tampering** | Attacker intercepts or modifies approved remediation SQL between human sign-off and execution. | Cryptographic binding: Signed execution token encapsulates $\text{SHA-256}(\text{SQL})$. Target MCP server recalculates hash and aborts on mismatch (`CryptographicIntegrityError`). | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts)<br>[`packages/mcp-servers/src/postgres.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/mcp-servers/src/postgres.ts) |
-| **T3: Approval Replay Attack** | Malicious script or operator reuses an already-consumed token to execute duplicate mutations. | Single-use consumption table (`consumed: true`). Subsequent execution attempts immediately throw `Replay attack detected`. | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts) |
-| **T4: Token Expiration / Stale Context** | Operator approves action hours later when system state or database schema has changed. | Strict 10-minute non-renewable TTL (`expiresAt = Date.now() + 600000`). Stale tokens throw `Security violation: Approval token expired`. | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts) |
-| **T5: Sandbox Escape / Host Exfiltration** | Malicious fixture code attempts path traversal (`../../etc/shadow`) or reads host environment secrets. | Strict directory confinement (`resolveSafePath`) and environment sanitization stripping all `*_KEY`, `*_TOKEN`, `*_SECRET`, `DATABASE_*` variables. | [`packages/sandbox/src/runtime.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/sandbox/src/runtime.ts) |
+| **T1: Prompt Injection / Hallucination** | LLM fabricates unverified DDL (`DROP TABLE`, unindexed keys) or adopts poisoned tool instructions. | Structural Invariant: $\text{UNTRUSTED DATA} \to \text{OBSERVATION} \to \text{EVIDENCE} \to \text{POLICY} \to \text{HITL} \to \text{EXECUTION}$. Policy Engine comment stripping + hard block. | [`packages/core/src/hitl/policies.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/policies.ts)<br>[`packages/core/tests/prompt_injection_defense.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/prompt_injection_defense.test.ts) |
+| **T2: In-Flight Payload Tampering** | Attacker intercepts or modifies approved remediation SQL/target between human sign-off and execution. | Cryptographic binding: Signed execution token encapsulates $\text{SHA-256}(\text{sessionId} \parallel \text{incidentId} \parallel \text{actionType} \parallel \text{target} \parallel \text{sql} \parallel \text{sandboxId})$. Hash mismatch aborts instantly. | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts)<br>[`packages/core/tests/hitl_adversarial.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/hitl_adversarial.test.ts) |
+| **T3: Cross-Process Replay Attack** | Concurrent scripts or distributed workers attempt to execute the same approved token twice. | Atomic filesystem CAS / exclusive-creation lock (`O_CREAT | O_EXCL` via `fs.openSync(..., 'wx')`). Second consumer is atomically rejected. | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts) |
+| **T4: Cross-Incident / Cross-Session Substitution** | Token authorized for Incident A is submitted to execute on Incident B. | Context validation: Token payload binds `sessionId` and `incidentId`. Substituted contexts are rejected with explicit security violation. | [`packages/core/src/hitl/gate.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/gate.ts) |
+| **T5: Command Injection & Sandbox Escape** | Malicious fixture embeds shell metacharacters (`;`, `&&`, `$()`, `\n`) or attempts path traversal (`../../etc/shadow`). | `execSafe` spawns directly with `shell: false` (zero metacharacter expansion). Path confinement with `fs.realpathSync` rejects symlink escapes and DOS devices. | [`packages/sandbox/src/runtime.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/sandbox/src/runtime.ts)<br>[`packages/sandbox/tests/sandbox_security.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/sandbox/tests/sandbox_security.test.ts) |
 
 ---
 
@@ -23,10 +23,10 @@
                                                  │
   Session ID ──────┐                             ▼
   Incident ID ─────┤                   ┌───────────────────┐
-  Action Type ─────┼─► SHA-256 Digest ─► Signed Single-Use  │
-  SQL Payload ─────┤                   │  Execution Token  │
-  Sandbox Proof ───┘                   └─────────┬─────────┘
-                                                 │
+  Action Type ─────┼─► SHA-256 Digest ─► Signed Single-Use │
+  Target Resource ─┤                   │  Execution Token  │
+  SQL Payload ─────┤                   └─────────┬─────────┘
+  Sandbox Proof ───┘                             │
                                                  ▼
                                      ┌───────────────────────┐
                                      │   PostgresMcpServer   │
@@ -44,23 +44,52 @@
 
 ### Mathematical Formulation
 The execution authorization digest $H_{\text{payload}}$ is computed as:
-$$H_{\text{payload}} = \text{HMAC-SHA256}\Big(\text{Secret}, \text{sessionId} \parallel \text{incidentId} \parallel \text{actionType} \parallel \text{target} \parallel \text{sql} \parallel H_{\text{sandbox}}\Big)$$
+$$H_{\text{payload}} = \text{SHA256}\Big(\text{sessionId} \parallel \text{incidentId} \parallel \text{actionType} \parallel \text{target} \parallel \text{sql} \parallel \text{sandboxId}\Big)$$
 
 ---
 
-## 3. AST Policy Precedence Matrix
+## 3. Four-Tier Truthfulness & Honesty Framework
 
-| Operation Category | AST Rule Checked | Action Taken |
+| Category | Precise Definition | Evidence / Proof Reference |
 | :--- | :--- | :--- |
-| **`DROP TABLE / DATABASE`** | Root DDL AST node is `DropStatement` | **HARD BLOCK** (`BLOCK` - Execution forbidden, no HITL prompt) |
-| **`DELETE / UPDATE` without `WHERE`** | DML node missing `WhereClause` | **HARD BLOCK** (`BLOCK` - Execution forbidden) |
-| **`ALTER TABLE ADD CONSTRAINT`** | Missing `NOT VALID` / blocking lock hazard | **REQUIRE HITL** (`APPROVE` - Requires sandbox proof + SRE signature) |
-| **`CREATE INDEX CONCURRENTLY`** | Non-blocking concurrent index build | **REQUIRE HITL** (`APPROVE` - Requires SRE signature) |
-| **`SELECT / EXPLAIN / SHOW`** | Read-only telemetry inspection | **AUTO-ALLOW** (`ALLOW` - Permitted during autonomous investigation) |
+| **1. Proven by Tests** | Deterministically validated across 11 automated verification suites (100% passing in CI). | `npm run verify` (`scripts/verify-all.js`) |
+| **2. Architectural Invariants** | Structural properties guaranteed by the harness pipeline regardless of LLM reasoning. | *Untrusted investigation data cannot directly cross the authorization boundary into execution.* |
+| **3. Environment-Dependent** | Process-level environment proxy blackholing on bare OS hosts; full kernel network namespace isolation (`--network none`) when running in container runtimes. | [`docs/LIMITATIONS_AND_BOUNDARIES.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/LIMITATIONS_AND_BOUNDARIES.md) |
+| **4. Not Claimed** | We do **not** claim that an LLM itself cannot be cognitively manipulated by prompt injection. We prove that cognitive manipulation cannot breach the downstream policy and cryptographic execution gates. | [`packages/core/tests/evil_repository.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/evil_repository.test.ts) |
 
 ---
 
-## 4. Verification Checklist & Audit Trail
-Every incident resolution produces an immutable Merkle Audit Leaf:
-- `leafHash = SHA256(incidentId + rootCauseSha + approvalToken + executionDurationMs + recoveryVerified)`
-- Emitted in real-time to the SRE Command Center SSE stream and stored in SQLite state persistence (`packages/core/src/storage/db.ts`).
+## 4. Dynamic Causal Evidence Graph
+
+TrueSentry structures all investigation facts into a directional Causal Evidence Graph emitted via SSE in real-time:
+
+```
+                  [ 🚨 Alert Ingested ]
+                           │ (triggers)
+                           ▼
+             [ Prometheus: Error Rate ↑ 38.4% ]
+                           │ (correlates_to)
+                           ▼
+          [ PostgreSQL: Table Lock on orders ]
+                           │ (introduced_in)
+                           ▼
+            [ GitHub Commit: 049_migration ]
+                           │ (isolated_by)
+                           ▼
+             [ Git Bisect: Physical Repo ]
+                           │ (reproduced_in)
+                           ▼
+          [ OS Sandbox: 48/48 Tests Passed ]
+                           │ (confirms)
+                           ▼
+              [ 🎯 ROOT CAUSE CONFIRMED ]
+                           │ (requires_approval)
+                           ▼
+          [ Cryptographic HITL Safety Gate ]
+                           │ (authorizes_execution)
+                           ▼
+           [ Atomic CAS Verified Remediation ]
+                           │ (restores_health)
+                           ▼
+          [ Prometheus Verified: 0.00% Error ]
+```

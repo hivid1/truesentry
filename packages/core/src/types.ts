@@ -30,10 +30,31 @@ export interface HitlApprovalRequest {
   status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
+export interface EvidenceNode {
+  id: string;
+  label: string;
+  type: "INCIDENT" | "TELEMETRY" | "LOCK" | "DEPLOYMENT" | "BISECT" | "SANDBOX" | "ROOT_CAUSE" | "HITL" | "REMEDIATION" | "RECOVERY";
+  status: "ACTIVE" | "VERIFIED" | "BLOCKED" | "COMPLETED";
+  detail: string;
+  timestamp: number;
+}
+
+export interface EvidenceEdge {
+  from: string;
+  to: string;
+  relation: string;
+}
+
+export interface EvidenceGraph {
+  nodes: EvidenceNode[];
+  edges: EvidenceEdge[];
+  summary: string;
+}
+
 export interface AgentEvent {
   eventId: string;
   sessionId: string;
-  type: "THOUGHT" | "TOOL_CALL" | "TOOL_RESULT" | "SANDBOX_LOG" | "APPROVAL_REQUEST" | "TELEMETRY" | "INCIDENT_RESOLVED";
+  type: "THOUGHT" | "TOOL_CALL" | "TOOL_RESULT" | "SANDBOX_LOG" | "APPROVAL_REQUEST" | "TELEMETRY" | "EVIDENCE_GRAPH_UPDATE" | "INCIDENT_RESOLVED";
   timestamp: number;
   subagent?: string;
   payload: Record<string, unknown>;
