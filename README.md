@@ -81,8 +81,9 @@ graph TD
 | **Adversarial Repository Containment** | **3.0s** | Containment verification on cloned repos with malicious hooks and scripts |
 | **Dynamic Autonomy Across 5 Incidents** | **3.1s** | Dynamic toolchain selection across DB locks, ReDoS, memory leaks, deployments |
 | **Evidence Graph Invariants & Provenance** | **2.9s** | Causality verification, commit alignment, and complete regression suite assertions |
-| **Adversarial Chaos & Safe-Abort** | **29.4s** | Memory leak stress, safe-abort on failing patches, and timeout recovery |
-| **Full E2E Incident Response Lifecycle** | **9.3s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification |
+| **Adversarial Chaos & Safe-Abort** | **32.1s** | Memory leak stress, safe-abort on failing patches, and timeout recovery |
+| **Full E2E Incident Response Lifecycle** | **10.2s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification |
+| **TrueForge Core Capabilities Matrix** | **11.1s** | Multi-subagent swarm, persistent sessions, event history replay, dynamic model switching |
 
 ---
 
@@ -91,13 +92,13 @@ graph TD
 ### Prerequisites
 - Node.js >= 20.x
 
-### Run the Master Verification (All 12 Criteria)
+### Run the Master Verification (All 13 Criteria)
 ```bash
 # Clone the repository:
 git clone https://github.com/hivid1/truesentry.git
 cd truesentry
 
-# Install, build, and verify all 12 criteria in one command:
+# Install, build, and verify all 13 criteria in one command:
 npm install
 npm run build
 npm run verify
@@ -120,11 +121,11 @@ Open **http://localhost:3000** to access the real-time SRE dashboard, inspect th
 
 | Track | Target Prize | TrueSentry Implementation & Submission Asset |
 | :--- | :--- | :--- |
-| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Agent Harness integration: `TrueForgeRuntimePanel`, 4 native MCP servers, OS process sandboxing, and cryptographically bound HITL gates. |
+| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Harness integration: [`docs/TRUEFORGE_CAPABILITY_MATRIX.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/TRUEFORGE_CAPABILITY_MATRIX.md), `TrueForgeRuntimePanel`, 4 native MCP servers, subagent swarm, OS sandbox, and cryptographic HITL. |
 | **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](file:///c:/Users/vidwa/HACK/trueforge/CODE_QUALITY.md) + Full PR audit trail in [`QODO_REVIEW_EVIDENCE.md`](file:///c:/Users/vidwa/HACK/trueforge/QODO_REVIEW_EVIDENCE.md). |
-| **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, clickable **Causal Evidence Graph**, and 1-Click **Judge Attack Lab**. |
+| **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, `AgentStateHeader` ("Now / Next / Waiting For"), clickable **Causal Evidence Graph**, and **Judge Red-Team Attack Lab**. |
 | **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
-| **Top Social Posts** | **Hackathon Swag & Community Showcase** | Viral thread and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SOCIAL_POST.md). |
+| **Top Social Posts** | **Hackathon Swag & Community Showcase** | 5-post attack campaign and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SOCIAL_POST.md). |
 
 ---
 

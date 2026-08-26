@@ -13,6 +13,7 @@ import { TopologyMap } from "@/components/TopologyMap";
 import { PostMortemModal } from "@/components/PostMortemModal";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
 import { EvidenceGraphViewer, EvidenceNodeUI } from "@/components/EvidenceGraphViewer";
+import { AgentStateHeader } from "@/components/AgentStateHeader";
 import { TrueForgeRuntimePanel } from "@/components/TrueForgeRuntimePanel";
 import { AttackLab } from "@/components/AttackLab";
 import { HitlApprovalRequest, AgentThoughtEvent, TelemetryPoint } from "@/types/ui";
@@ -147,6 +148,15 @@ export default function CommandCenterPage() {
         incidentTitle={incidentTitle}
         severity={severity}
         isConnected={isConnected}
+      />
+
+      {/* Real-Time Agent State & Irreversible Action Banner */}
+      <AgentStateHeader
+        status={status}
+        incidentTitle={incidentTitle}
+        currentStepIndex={currentStepIndex}
+        pendingApproval={pendingApproval}
+        onDecision={handleDecision}
       />
 
       {/* Top Real-Time Causal Evidence Graph Banner */}

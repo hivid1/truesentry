@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 
 console.log('\n==================================================================');
-console.log('🛡️  TRUESENTRY: MASTER 12-POINT ADVERSARIAL & SECURITY RUNNER');
+console.log('🛡️  TRUESENTRY: MASTER 13-POINT ADVERSARIAL & TRUEFORGE RUNNER');
 console.log('==================================================================\n');
 
 const tests = [
@@ -56,6 +56,10 @@ const tests = [
   {
     name: '12. TrueSentry 100-Point Internal Adversarial Safety Benchmark (7 Threat Vectors)',
     cmd: 'npx vitest run packages/core/tests/security_benchmark.test.ts',
+  },
+  {
+    name: '13. TrueForge Core Harness Capabilities Matrix (Subagents, Sessions, Reconnects, Models)',
+    cmd: 'npx vitest run packages/core/tests/trueforge_capabilities.test.ts',
   },
 ];
 

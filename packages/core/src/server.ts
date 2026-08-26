@@ -79,6 +79,33 @@ app.post("/api/approvals/:approvalId", async (c) => {
   return c.json(result);
 });
 
+// Session Details & Reconnect Query
+app.get("/api/sessions/:sessionId", (c) => {
+  const sessionId = c.req.param("sessionId");
+  const session = sessionStore.getSession(sessionId);
+  if (!session) return c.json({ error: "Session not found" }, 404);
+  const graph = coordinator.getEvidenceGraph(sessionId);
+  const history = broadcaster.getHistory(sessionId);
+  return c.json({ session, graph, eventCount: history.length });
+});
+
+// Model Provider Switching Endpoint
+app.post("/api/sessions/:sessionId/model", async (c) => {
+  const sessionId = c.req.param("sessionId");
+  const body = await c.req.json().catch(() => ({}));
+  const model = body.model || "gemini-2.5-pro";
+  sessionStore.setModel(sessionId, model);
+  return c.json({ sessionId, model, status: "UPDATED" });
+});
+
+// Direct Evidence Graph Retrieval
+app.get("/api/sessions/:sessionId/graph", (c) => {
+  const sessionId = c.req.param("sessionId");
+  const graph = coordinator.getEvidenceGraph(sessionId);
+  if (!graph) return c.json({ error: "Evidence graph not found" }, 404);
+  return c.json({ graph });
+});
+
 const port = Number(process.env.PORT) || 8790;
 console.log(`⚡ TrueSentry Harness Server running at http://localhost:${port}`);
 serve({ fetch: app.fetch, port });
