@@ -1,7 +1,19 @@
 import { McpToolResult, PostgresLockSchema, PostgresExplainSchema } from "./types.js";
+import crypto from "crypto";
+
+export type PostgresTokenVerifier = (tokenOrNonce: string, sql: string) => void;
 
 export class PostgresMcpServer {
   public name = "postgres-telemetry";
+  private tokenVerifier?: PostgresTokenVerifier;
+
+  constructor(tokenVerifier?: PostgresTokenVerifier) {
+    this.tokenVerifier = tokenVerifier;
+  }
+
+  public setTokenVerifier(verifier: PostgresTokenVerifier): void {
+    this.tokenVerifier = verifier;
+  }
 
   public listTools() {
     return [
@@ -37,12 +49,12 @@ export class PostgresMcpServer {
       },
       {
         name: "execute_remediation_sql",
-        description: "Applies verified SQL remediation script after human approval.",
+        description: "Applies verified SQL remediation script after cryptographic human approval verification.",
         inputSchema: {
           type: "object",
           properties: {
             sql: { type: "string", description: "The verified SQL to execute" },
-            approvalNonce: { type: "string", description: "Cryptographic approval nonce" },
+            approvalNonce: { type: "string", description: "Cryptographic approval nonce or token" },
           },
           required: ["sql", "approvalNonce"],
         },
@@ -58,20 +70,24 @@ export class PostgresMcpServer {
           content: [
             {
               type: "text",
-              text: JSON.stringify({
-                lockedTable: "orders",
-                activeLocks: [
-                  {
-                    pid: 14092,
-                    mode: "AccessExclusiveLock",
-                    granted: true,
-                    query: "ALTER TABLE orders ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id);",
-                    durationSeconds: 742,
-                    waitingPids: [14101, 14104, 14110, 14115],
-                  },
-                ],
-                totalBlockedQueries: 18,
-              }, null, 2),
+              text: JSON.stringify(
+                {
+                  lockedTable: "orders",
+                  activeLocks: [
+                    {
+                      pid: 14092,
+                      mode: "AccessExclusiveLock",
+                      granted: true,
+                      query: "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);",
+                      durationSeconds: 742,
+                      waitingPids: [14101, 14104, 14110, 14115],
+                    },
+                  ],
+                  totalBlockedQueries: 18,
+                },
+                null,
+                2
+              ),
             },
           ],
         };
@@ -88,25 +104,29 @@ export class PostgresMcpServer {
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              "Plan": {
-                "Node Type": "LockRows",
-                "Actual Startup Time": 1419.8,
-                "Actual Total Time": 1420.2,
-                "Actual Rows": 0,
-                "Actual Loops": 1,
-                "Plans": [
-                  {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "orders",
-                    "Filter": "(status = 'PENDING'::text)",
-                  },
-                ],
+            text: JSON.stringify(
+              {
+                Plan: {
+                  "Node Type": "LockRows",
+                  "Actual Startup Time": 1419.8,
+                  "Actual Total Time": 1420.2,
+                  "Actual Rows": 0,
+                  "Actual Loops": 1,
+                  Plans: [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Relation Name": "orders",
+                      Filter: "(status = 'PENDING'::text)",
+                    },
+                  ],
+                },
+                "Execution Time": 1420.4,
+                "Planning Time": 0.12,
+                Diagnosis: "Severe lock contention waiting on PID 14092 (AccessExclusiveLock on orders).",
               },
-              "Execution Time": 1420.4,
-              "Planning Time": 0.12,
-              "Diagnosis": "Severe lock contention waiting on PID 14092 (AccessExclusiveLock on orders).",
-            }, null, 2),
+              null,
+              2
+            ),
           },
         ],
       };
@@ -117,12 +137,16 @@ export class PostgresMcpServer {
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              maxConnections: 100,
-              usedConnections: 98,
-              waitingTransactions: 18,
-              stateBreakdown: { active: 18, idle: 80, idle_in_transaction: 0 },
-            }, null, 2),
+            text: JSON.stringify(
+              {
+                maxConnections: 100,
+                usedConnections: 98,
+                waitingTransactions: 18,
+                stateBreakdown: { active: 18, idle: 80, idle_in_transaction: 0 },
+              },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -131,19 +155,29 @@ export class PostgresMcpServer {
     if (name === "execute_remediation_sql") {
       const { sql, approvalNonce } = args as { sql: string; approvalNonce: string };
       if (!approvalNonce) {
-        throw new Error("Cannot execute destructive SQL without cryptographic approval nonce.");
+        throw new Error("Security Violation: Cannot execute state-modifying SQL without cryptographic approval token.");
       }
+
+      // Execute cryptographic token & payload verification if verifier is attached
+      if (this.tokenVerifier) {
+        this.tokenVerifier(approvalNonce, sql);
+      }
+
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              status: "SUCCESS",
-              executedSql: sql,
-              rowsAffected: 0,
-              lockDurationMs: 3.2,
-              message: "Constraint dropped and concurrent index verified. All 18 table locks released.",
-            }, null, 2),
+            text: JSON.stringify(
+              {
+                status: "SUCCESS",
+                executedSql: sql,
+                rowsAffected: 0,
+                lockDurationMs: 0.14,
+                message: "Verified remediation SQL executed. Table locks released and indexes active.",
+              },
+              null,
+              2
+            ),
           },
         ],
       };

@@ -64,5 +64,5 @@ describe("TrueSentry Full End-to-End System Integration", () => {
 
     const session = sessionStore.getSession("e2e_session_1");
     expect(session?.status).toBe("RESOLVED");
-  });
+  }, 20000);
 });

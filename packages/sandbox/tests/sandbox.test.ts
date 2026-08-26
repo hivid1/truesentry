@@ -1,39 +1,63 @@
 import { describe, it, expect } from "vitest";
-import { SandboxRuntime } from "../src/runtime";
-import { AstErrorParser } from "../src/astParser";
-import { GitBisectRunner } from "../src/bisect";
-import { SelfCorrectionEngine } from "../src/selfCorrection";
+import { SandboxRuntime } from "../src/runtime.js";
+import { AstErrorParser } from "../src/astParser.js";
+import { GitBisectRunner } from "../src/bisect.js";
+import { SelfCorrectionEngine } from "../src/selfCorrection.js";
+import { createCheckoutServiceGitFixture } from "../../scenarios/src/fixtures/checkout_repo.js";
 
-describe("Sandbox & Self-Correction Engine Tests", () => {
-  it("executes commands in isolated sandbox", async () => {
+describe("Sandbox & Self-Correction Engine Tests (Genuine Process Execution)", () => {
+  it("executes commands and writes files in genuine isolated directory", async () => {
     const sandbox = new SandboxRuntime();
-    await sandbox.writeFile("/workspace/test.txt", "hello");
-    const content = await sandbox.readFile("/workspace/test.txt");
-    expect(content).toBe("hello");
+    await sandbox.writeFile("test.txt", "hello-world-sandbox");
+    const content = await sandbox.readFile("test.txt");
+    expect(content).toBe("hello-world-sandbox");
 
-    const exec = await sandbox.exec("echo test");
-    expect(exec.exitCode).toBe(0);
+    const execRes = await sandbox.exec("node -e \"console.log('process-exec-ok')\"");
+    expect(execRes.exitCode).toBe(0);
+    expect(execRes.stdout).toContain("process-exec-ok");
+    sandbox.cleanup();
   });
 
-  it("runs git bisect to isolate faulty commit", async () => {
-    const sandbox = new SandboxRuntime();
-    const result = await GitBisectRunner.runBisect(sandbox);
-    expect(result.badCommitSha).toBe("4c21e90b8f41");
+  it("handles process timeouts gracefully", async () => {
+    const sandbox = new SandboxRuntime("sbx_timeout_test", undefined, { timeoutMs: 300 });
+    const res = await sandbox.exec("node -e \"setTimeout(() => {}, 5000)\"");
+    expect(res.exitCode).toBe(124);
+    expect(res.stderr).toContain("Sandbox-Timeout");
+    sandbox.cleanup();
+  });
+
+  it("runs genuine git bisect on physical git fixture to isolate bad commit dynamically", async () => {
+    const fixture = createCheckoutServiceGitFixture();
+    const sandbox = new SandboxRuntime("sbx_bisect_test", undefined, {
+      workingDirectory: fixture.repoPath,
+    });
+
+    const result = await GitBisectRunner.runBisect(sandbox, fixture.initialGoodCommit);
+    expect(result.badCommitSha).toBe(fixture.badCommitSha);
     expect(result.failingFile).toContain("049_add_orders_user_fk.sql");
+    expect(result.author).toContain("ci-bot");
+    expect(result.message).toContain("049_add_orders_user_fk");
+
+    sandbox.cleanup();
   });
 
-  it("parses error traces and self-corrects in repair loop", async () => {
+  it("parses error traces and executes iterative self-correction loop", async () => {
+    const fixture = createCheckoutServiceGitFixture();
+    const sandbox = new SandboxRuntime("sbx_correction_test", undefined, {
+      workingDirectory: fixture.repoPath,
+    });
+
     const parsed = AstErrorParser.parse("Error: Lock timeout exceeded 5000ms on table 'orders'");
     expect(parsed.errorType).toBe("LOCK_TIMEOUT");
 
-    const sandbox = new SandboxRuntime();
-    // Initial broken patch that causes lock timeout
     const repair = await SelfCorrectionEngine.executeRepairLoop(
       sandbox,
-      "ALTER TABLE orders ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id);"
+      "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);"
     );
 
     expect(repair.history.length).toBeGreaterThan(0);
     expect(repair.finalPatch).toContain("CONCURRENTLY");
+
+    sandbox.cleanup();
   });
 });
