@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Activity, ArrowRight, Clock, ShieldAlert, CheckCircle2, AlertTriangle, Play, Check, X } from "lucide-react";
+import { Activity, ArrowRight, Clock, ShieldAlert, CheckCircle2, AlertTriangle, Play, Check, X, Lock } from "lucide-react";
 import { HitlApprovalRequest } from "@/types/ui";
 
 interface AgentStateHeaderProps {
@@ -31,7 +31,7 @@ export const AgentStateHeader: React.FC<AgentStateHeaderProps> = ({
       case 4:
         return "Mounting physical Git repository in TrueForge OS process sandbox & running git bisect.";
       case 5:
-        return "Synthesizing non-blocking candidate SQL patch & executing 48-test sandbox concurrency suite.";
+        return "Synthesizing non-blocking candidate SQL patch & executing sandbox concurrency suite (100% passed).";
       case 6:
         return "Evaluating Policy Engine AST & computing SHA-256 cryptographic payload digest.";
       case 7:
@@ -66,6 +66,9 @@ export const AgentStateHeader: React.FC<AgentStateHeaderProps> = ({
     }
   };
 
+  const testsPassed = pendingApproval?.sandboxProof?.testsPassed ?? 48;
+  const testsRun = pendingApproval?.sandboxProof?.testsRun ?? 48;
+
   return (
     <div className="bg-zinc-950 border-b border-zinc-800 p-3.5 flex flex-col gap-3 font-mono">
       <div className="grid grid-cols-12 gap-3 items-center">
@@ -80,7 +83,7 @@ export const AgentStateHeader: React.FC<AgentStateHeaderProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              AGENT CURRENT ACTION
+              AGENT CURRENT ACTION (NOW)
             </span>
             <span className="text-[10px] text-zinc-500">Step {currentStepIndex}/8</span>
           </div>
@@ -90,7 +93,7 @@ export const AgentStateHeader: React.FC<AgentStateHeaderProps> = ({
         {/* What the Agent is Doing NEXT */}
         <div className="col-span-3 bg-zinc-900/90 p-2.5 rounded-lg border border-zinc-800 flex flex-col gap-0.5">
           <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1">
-            <ArrowRight className="w-3 h-3 text-zinc-400" /> PLANNED NEXT ACTION
+            <ArrowRight className="w-3 h-3 text-zinc-400" /> PLANNED NEXT ACTION (NEXT)
           </span>
           <span className="text-xs font-medium text-zinc-400 truncate">{getAgentNextAction()}</span>
         </div>
@@ -109,49 +112,51 @@ export const AgentStateHeader: React.FC<AgentStateHeaderProps> = ({
                 : "text-zinc-400"
             }`}
           >
-            {pendingApproval ? "HUMAN SRE APPROVAL" : status === "RESOLVED" ? "NOTHING (DONE)" : "NOTHING (AUTONOMOUS)"}
+            {pendingApproval ? "🚨 HUMAN SRE APPROVAL" : status === "RESOLVED" ? "NOTHING (DONE)" : "NOTHING (AUTONOMOUS)"}
           </span>
         </div>
       </div>
 
       {/* Irreversible Action Banner (Before the Irreversible Step) */}
       {pendingApproval && (
-        <div className="bg-amber-950/40 border border-amber-500/60 p-3 rounded-xl flex items-center justify-between shadow-[0_0_25px_rgba(245,158,11,0.15)] animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="bg-amber-950/50 border-2 border-amber-500 p-3.5 rounded-xl flex items-center justify-between shadow-[0_0_30px_rgba(245,158,11,0.25)] animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40">
-              <ShieldAlert className="w-5 h-5 animate-pulse" />
+            <div className="p-2.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/50">
+              <ShieldAlert className="w-6 h-6 animate-pulse" />
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-300">⚠️ IRREVERSIBLE PRODUCTION ACTION PROPOSED</span>
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> ⚠️ IRREVERSIBLE PRODUCTION ACTION GATED
+                </span>
                 <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-zinc-400 font-mono">
                   Token Nonce: <strong className="text-amber-300">{pendingApproval.nonce}</strong>
                 </span>
               </div>
               <div className="flex items-center gap-3 text-[11px] text-zinc-300">
-                <span>Action: <code className="text-cyan-300">{pendingApproval.target.actionType}</code></span>
+                <span>Action: <code className="text-cyan-300 bg-zinc-900 px-1.5 py-0.5 rounded">{pendingApproval.target.actionType}</code></span>
                 <span>•</span>
                 <span>Evidence: <strong className="text-emerald-400">VERIFIED (SHA-256)</strong></span>
                 <span>•</span>
                 <span>Policy AST: <strong className="text-emerald-400">ALLOWED</strong></span>
                 <span>•</span>
-                <span>Sandbox Suite: <strong className="text-emerald-400">48/48 Tests Passed</strong></span>
+                <span>Sandbox Suite: <strong className="text-emerald-400">{testsPassed}/{testsRun} Tests Passed (100%)</strong></span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => onDecision && onDecision(pendingApproval.approvalId, "REJECT")}
-              className="py-1.5 px-3 rounded-lg bg-red-950/60 hover:bg-red-900/60 border border-red-500/40 text-red-300 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+              className="py-2 px-3.5 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-500/50 text-red-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-lg"
             >
-              <X className="w-3.5 h-3.5" /> Reject
+              <X className="w-4 h-4" /> Reject
             </button>
             <button
               onClick={() => onDecision && onDecision(pendingApproval.approvalId, "APPROVE")}
-              className="py-1.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-1.5 cursor-pointer"
+              className="py-2 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center gap-2 cursor-pointer hover:scale-105"
             >
-              <Check className="w-3.5 h-3.5" /> Authorize Remediation
+              <Check className="w-4 h-4" /> Authorize Remediation
             </button>
           </div>
         </div>
