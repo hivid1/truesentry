@@ -17,9 +17,9 @@ When high-severity production alerts trigger at 2:00 AM (e.g. checkout HTTP 500 
 **TrueSentry** combines dynamic LLM tool-calling with the **TrueForge Agent Harness** to provide safe, automated incident investigation:
 
 1. **Model Context Protocol (MCP) Telemetry**: Interacts with Prometheus error-rate metrics, PostgreSQL lock telemetry (`pg_locks`), and GitHub deployment history via standard Model Context Protocol (MCP) tools.
-2. **Real Isolated Sandbox & Git Bisect**: Creates an isolated OS-process sandbox directory (`packages/sandbox/src/runtime.ts`), executes child processes with execution timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
+2. **Real Isolated Sandbox & Git Bisect**: Creates an isolated OS-process sandbox directory (`packages/sandbox/src/runtime.ts`), executes child processes with `shell: false` (`execSafe`), applies default outbound network blackholing (`HTTP_PROXY=http://127.0.0.1:0`), enforces 30s execution timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
 3. **Iterative Self-Correction Loop**: Executes unit and concurrency regression suites inside the isolated sandbox process, refining blocking DDL into non-blocking concurrent statements until all test assertions pass.
-4. **Cryptographically Bound HITL Safety Gate**: TrueForge halts execution before state-modifying actions. The system computes a **SHA-256 payload digest** over `(sessionId + incidentId + actionType + sql + sandboxProof)` and issues a single-use token upon human approval. Any SQL tampering or replay attempt is rejected.
+4. **Cryptographically Bound HITL Safety Gate**: TrueForge halts execution before state-modifying actions. The system computes a **SHA-256 payload digest** over `(sessionId + incidentId + actionType + target + sql + sandboxProof)` and issues a single-use token upon human approval. Kernel-level atomic lockfiles (`fs.openSync(..., 'wx')`) prevent cross-process replay race conditions. Any SQL tampering or replay attempt is rejected.
 5. **Multi-Agent Workflow**: Delegates specialized tasks across dedicated workers (*Telemetry Scout*, *Sandbox Bisector*, *Blast-Radius Auditor*, and *Post-Mortem Scribe*).
 
 ```mermaid
@@ -53,12 +53,28 @@ graph TD
 
 ---
 
+## 🛡️ Internal Adversarial Safety Benchmark: 100/100
+
+TrueSentry evaluates its execution guardrails across 7 defined threat vectors (`npm run verify`):
+
+1. **Prompt Injection Resistance**: Dangerous DDL (`DROP DATABASE`, unconstrained `DELETE/UPDATE`) embedded in instructions is hard-blocked.
+2. **Cryptographic Tamper Defense**: Payloads mutated after human sign-off fail SHA-256 validation.
+3. **Anti-Replay & Atomic Single-Use**: OS kernel locks prevent concurrent token reuse across processes.
+4. **Cross-Context Substitution**: Approvals cannot be transposed across incidents or sessions.
+5. **Zero-Shell Execution (`execSafe`)**: Subprocesses run with `shell: false`, rendering command injection strings inert.
+6. **Path Confinement & Null-Byte Defense**: Path traversal (`../../`), symlink escapes, and Windows DOS devices are rejected.
+7. **Environment Host Secret Redaction**: Production credentials and API keys are scrubbed before child process execution.
+
+> **Key Architectural Invariant**: *Untrusted investigation data cannot directly cross the authorization boundary into execution.*
+
+---
+
 ## 🚀 Quickstart (Zero-Config Setup)
 
 ### Prerequisites
 - Node.js >= 20.x
 
-### Run the Master Verification (All 8 Criteria)
+### Run the Master Verification (All 11 Criteria)
 ```bash
 # Clone using GitHub CLI:
 gh repo clone hivid1/truesentry
@@ -66,7 +82,7 @@ gh repo clone hivid1/truesentry
 # Or clone via HTTPS:
 git clone https://github.com/hivid1/truesentry.git
 
-# Install, build, and verify all 8 criteria in one command:
+# Install, build, and verify all 11 criteria in one command:
 cd truesentry
 npm install
 npm run build

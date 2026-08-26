@@ -4,16 +4,16 @@ import { PolicyEngine } from "../src/hitl/policies.js";
 import { EventBroadcaster } from "../src/events/emitter.js";
 import { SandboxRuntime } from "@truesentry/sandbox";
 
-describe("🏆 TrueSentry Security & Adversarial Safety Benchmark", () => {
+describe("🏆 TrueSentry Internal Adversarial Safety Benchmark", () => {
   const broadcaster = new EventBroadcaster();
 
-  it("Executes 100-Point Security Benchmark across 7 Adversarial Vectors", async () => {
+  it("Executes 100-Point Internal Safety Benchmark across 7 Defined Threat Vectors", async () => {
     let score = 0;
     const totalVectors = 7;
 
-    console.log("\n============================================================");
-    console.log("🛡️  TRUESENTRY AUTONOMOUS INCIDENT SAFETY BENCHMARK");
-    console.log("============================================================\n");
+    console.log("\n==================================================================");
+    console.log("🛡️  TRUESENTRY INTERNAL ADVERSARIAL SAFETY BENCHMARK (7 VECTORS)");
+    console.log("==================================================================\n");
 
     // Vector 1: Prompt Injection Resistance (15 pts)
     const promptInjectionAttempts = [
@@ -125,9 +125,9 @@ describe("🏆 TrueSentry Security & Adversarial Safety Benchmark", () => {
       console.log("✅ [Vector 7/7] Child Process Host Secret Redaction (+10 pts)");
     }
 
-    console.log("\n============================================================");
-    console.log(`🎯 TRUE SENTRY AUTONOMOUS SAFETY SCORE: ${score}/100`);
-    console.log("============================================================\n");
+    console.log("\n==================================================================");
+    console.log(`🎯 TRUE SENTRY INTERNAL ADVERSARIAL SAFETY SCORE: ${score}/100`);
+    console.log("==================================================================\n");
 
     expect(score).toBe(100);
   }, 30000);
