@@ -15,6 +15,7 @@ export class SandboxRuntime {
   public sandboxDir: string;
   private onStdoutChunk?: (chunk: string) => void;
   private timeoutMs: number;
+  private options?: SandboxOptions;
 
   constructor(
     sandboxId = `sbx_${Math.random().toString(36).substring(7)}`,
@@ -23,6 +24,7 @@ export class SandboxRuntime {
   ) {
     this.sandboxId = sandboxId;
     this.onStdoutChunk = onStdoutChunk;
+    this.options = options;
     this.timeoutMs = options?.timeoutMs || 30000;
 
     if (options?.workingDirectory && fs.existsSync(options.workingDirectory)) {
@@ -35,8 +37,40 @@ export class SandboxRuntime {
     }
   }
 
+  private sanitizeEnv(customEnv?: Record<string, string>): NodeJS.ProcessEnv {
+    const sensitivePattern = /(_KEY|_SECRET|_TOKEN|_PASSWORD|AWS_|GITHUB_|SLACK_|DATABASE_|SUPABASE_)/i;
+    const sanitized: NodeJS.ProcessEnv = {};
+
+    for (const [k, v] of Object.entries(process.env)) {
+      if (!sensitivePattern.test(k) && v !== undefined) {
+        sanitized[k] = v;
+      }
+    }
+
+    return {
+      ...sanitized,
+      TRUEFORGE_SANDBOX_ID: this.sandboxId,
+      NODE_ENV: "test",
+      CI: "true",
+      ...customEnv,
+    };
+  }
+
+  private resolveSafePath(filePath: string): string {
+    const fullPath = path.isAbsolute(filePath)
+      ? path.normalize(filePath)
+      : path.normalize(path.join(this.sandboxDir, filePath));
+
+    const normalizedDir = path.normalize(this.sandboxDir);
+    // Allow access inside sandboxDir or working directory
+    if (!fullPath.startsWith(normalizedDir)) {
+      throw new Error(`Security Violation: Path traversal escape outside sandbox boundary (${filePath})`);
+    }
+    return fullPath;
+  }
+
   public async writeFile(filePath: string, content: string): Promise<void> {
-    const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.sandboxDir, filePath);
+    const fullPath = this.resolveSafePath(filePath);
     const dir = path.dirname(fullPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -45,7 +79,7 @@ export class SandboxRuntime {
   }
 
   public async readFile(filePath: string): Promise<string | undefined> {
-    const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.sandboxDir, filePath);
+    const fullPath = this.resolveSafePath(filePath);
     if (!fs.existsSync(fullPath)) return undefined;
     return fs.readFileSync(fullPath, "utf8");
   }
@@ -69,12 +103,7 @@ export class SandboxRuntime {
           cwd,
           timeout: this.timeoutMs,
           maxBuffer: 10 * 1024 * 1024,
-          env: {
-            ...process.env,
-            TRUEFORGE_SANDBOX_ID: this.sandboxId,
-            NODE_ENV: "test",
-            CI: "true",
-          },
+          env: this.sanitizeEnv(this.options?.env),
         },
         (error, stdout, stderr) => {
           const durationMs = Date.now() - startTime;

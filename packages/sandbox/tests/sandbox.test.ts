@@ -60,4 +60,39 @@ describe("Sandbox & Self-Correction Engine Tests (Genuine Process Execution)", (
 
     sandbox.cleanup();
   });
+
+  it("prevents path traversal escapes outside sandbox boundary (Item #156 & #194)", async () => {
+    const sandbox = new SandboxRuntime();
+    await expect(
+      sandbox.writeFile("../../secret_passwords.txt", "malicious_content")
+    ).rejects.toThrow(/Security Violation: Path traversal escape/);
+
+    await expect(
+      sandbox.readFile("../../etc/shadow")
+    ).rejects.toThrow(/Security Violation: Path traversal escape/);
+
+    sandbox.cleanup();
+  });
+
+  it("sanitizes environment and strips sensitive host tokens from child processes (Item #160-#164)", async () => {
+    process.env.TEST_AWS_SECRET_KEY = "super_secret_aws_key";
+    process.env.PROD_DATABASE_URL = "postgres://root:password@prod-db.internal:5432/main";
+    process.env.GITHUB_AUTH_TOKEN = "ghp_1234567890abcdef";
+
+    const sandbox = new SandboxRuntime();
+    const res = await sandbox.exec(
+      "node -e \"console.log(JSON.stringify({ aws: process.env.TEST_AWS_SECRET_KEY, db: process.env.PROD_DATABASE_URL, gh: process.env.GITHUB_AUTH_TOKEN }))\""
+    );
+
+    expect(res.exitCode).toBe(0);
+    const parsed = JSON.parse(res.stdout.trim());
+    expect(parsed.aws).toBeUndefined();
+    expect(parsed.db).toBeUndefined();
+    expect(parsed.gh).toBeUndefined();
+
+    delete process.env.TEST_AWS_SECRET_KEY;
+    delete process.env.PROD_DATABASE_URL;
+    delete process.env.GITHUB_AUTH_TOKEN;
+    sandbox.cleanup();
+  });
 });
