@@ -22,6 +22,7 @@
 | **[PR #16](https://github.com/hivid1/truesentry/pull/16)** | `packages/core`, `apps/command-center` | Recommended surfacing explicit agent state clarity and verifying reconnect event history. | Added `AgentStateHeader`, `EventBroadcaster` historical replay, model switcher, and test #13. | **Merged** ✅ |
 | **[PR #17](https://github.com/hivid1/truesentry/pull/17)** | `scripts/`, `docs/` | Recommended automated preflight check for zero-config submission readiness. | Built `scripts/verify-submission.js`, `HOSTILE_JUDGE_QA.md`, and `SCORECARD_AND_PRIZE_AUDIT.md`. | **Merged** ✅ |
 | **[PR #18](https://github.com/hivid1/truesentry/pull/18)** | `packages/mcp-servers`, `packages/core` | Flagged simulation hardcoding in MCP servers and ephemeral in-memory session loss on process restarts. | Implemented Dual-Mode Live/Deterministic MCP adapters, live multi-model execution, durable WAL `SessionStore`, and dynamic `RegressionSuiteResult`. | **Merged** ✅ |
+| **[PR #19](https://github.com/hivid1/truesentry/pull/19)** | `apps/command-center`, `scripts/`, `docs/` | Recommended crystal-clear state visibility in UI (NOW/NEXT/WAITING), TrueForge mapping table, and polished 6-act live recording teleprompter. | Updated `AgentStateHeader`, `TrueForgeRuntimePanel`, `README.md`, and `scripts/record-demo.js`. | **Merged** ✅ |
 
 ---
 
