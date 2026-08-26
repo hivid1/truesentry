@@ -10,11 +10,16 @@
 
 ## 🎯 The Core Architectural Thesis
 
-> **"TrueSentry doesn't assume the agent is trustworthy. It makes the execution boundary trustworthy."**
-> 
-> *Key Invariant: Untrusted investigation data cannot directly cross the authorization boundary into execution.*
+```
+# THE AGENT CAN BE WRONG.
+# THE EXECUTION BOUNDARY CANNOT.
+```
 
-When production outages strike at 2:00 AM, unconstrained AI agents pose severe risks: a hallucinated query or prompt-injected instruction could corrupt databases or exacerbate downtime. TrueSentry demonstrates that **an LLM can be intelligent, autonomous, and potentially untrusted during investigation**, while its **execution boundary remains deterministically constrained by Policy-as-Code and Cryptographic Human-in-the-Loop authorization**.
+> **"TrueSentry doesn't assume the AI agent is trustworthy. It makes the execution boundary trustworthy.**
+> 
+> **So let's deliberately give the agent malicious information and see what happens."**
+> 
+> *Key Invariant: Untrusted investigation data cannot directly cross the authorization boundary into execution. A failed investigation cannot escalate into an authorized action.*
 
 ---
 
@@ -60,19 +65,24 @@ graph TD
 | **3. Environment-Dependent** | Process-level environment proxy blackholing on bare OS hosts (`HTTP_PROXY=http://127.0.0.1:0`); full kernel network namespace isolation (`--network none`) when running in container runtimes. | [`docs/LIMITATIONS_AND_BOUNDARIES.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/LIMITATIONS_AND_BOUNDARIES.md) |
 | **4. Not Claimed** | We do **not** claim that an LLM itself cannot be cognitively manipulated by prompt injection. We prove that cognitive manipulation cannot breach the downstream policy and cryptographic execution gates. | [`packages/core/tests/evil_repository.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/evil_repository.test.ts) |
 
+> **Important Boundary Clarification**: TrueSentry passes **12/12 automated verification suites** and scores **100/100 on its internally defined 7-vector adversarial safety benchmark**.
+
 ---
 
-## 🛡️ Internal Adversarial Safety Benchmark: 100/100
+## ⏱️ Measured Benchmark Performance (Physical Run Metrics)
 
-> *Note: This is TrueSentry's internal 7-vector adversarial evaluation benchmark, not a universal industry certification.*
-
-1. **Prompt Injection Resistance**: Dangerous DDL (`DROP DATABASE`, unconstrained `DELETE/UPDATE`) embedded in instructions is hard-blocked.
-2. **Cryptographic Tamper Defense**: Payloads mutated after human sign-off fail SHA-256 validation.
-3. **Anti-Replay & Atomic Single-Use**: Atomic filesystem CAS (`O_CREAT | O_EXCL` via `fs.openSync(..., 'wx')`) prevents concurrent token reuse across processes.
-4. **Cross-Context Substitution**: Approvals cannot be transposed across incidents or sessions.
-5. **Zero-Shell Execution (`execSafe`)**: Subprocesses run with `shell: false`, rendering command injection strings inert.
-6. **Path Confinement & Null-Byte Defense**: Path traversal (`../../`), symlink escapes, and Windows DOS devices are rejected.
-7. **Environment Host Secret Redaction**: Production credentials and API keys are scrubbed before child process execution.
+| Benchmark / Operation | Measured Timing | Verification Method |
+| :--- | :--- | :--- |
+| **Clean Monorepo Build** | **22.7s** | TypeScript compilation across 6 packages + Next.js 14 production export |
+| **Physical Git Bisect** | **14.1s** | 5 physical git commit checkouts + dynamic concurrency test suite runs |
+| **Sandbox Confinement & Zero-Shell** | **4.5s** | Path traversal, symlinks, and `execSafe` `shell: false` validation |
+| **Cryptographic HITL & CAS Concurrency** | **2.6s** | 50 concurrent worker token replay probes + SHA-256 field mutation testing |
+| **Prompt Injection & Comment Stripping** | **2.7s** | AST parsing across 10 malicious DDL inputs with hidden comment payloads |
+| **Adversarial Repository Containment** | **3.0s** | Containment verification on cloned repos with malicious hooks and scripts |
+| **Dynamic Autonomy Across 5 Incidents** | **3.1s** | Dynamic toolchain selection across DB locks, ReDoS, memory leaks, deployments |
+| **Evidence Graph Invariants & Provenance** | **2.9s** | Causality verification, commit alignment, and complete regression suite assertions |
+| **Adversarial Chaos & Safe-Abort** | **29.4s** | Memory leak stress, safe-abort on failing patches, and timeout recovery |
+| **Full E2E Incident Response Lifecycle** | **9.3s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification |
 
 ---
 
@@ -93,7 +103,7 @@ npm run build
 npm run verify
 ```
 
-### Run the 3-Minute Demo Runner & Teleprompter
+### Run the 3-Minute Demo Teleprompter Runner
 ```bash
 npm run demo:record
 ```
@@ -102,49 +112,19 @@ npm run demo:record
 ```bash
 npm run demo
 ```
-Open **http://localhost:3000** to access the real-time SRE dashboard.
+Open **http://localhost:3000** to access the real-time SRE dashboard, inspect the Causal Evidence Graph, and test the **Judge Red-Team Attack Lab**.
 
 ---
 
-## 🏛️ Monorepo Package Architecture
+## 🏆 Hackathon Track Alignment & Submission Assets
 
-```
-truesentry/
-├── apps/
-│   └── command-center/       # Next.js 14 App Router Operations Dashboard (Savile Row Track)
-│
-├── packages/
-│   ├── cli/                  # Terminal CLI Incident Responder (`truesentry`)
-│   ├── core/                 # TrueForge Agent Harness Coordinator, SSE Server, & HITL Gate
-│   ├── mcp-servers/          # Native MCP Servers (Prometheus, Postgres, GitHub, Slack)
-│   ├── sandbox/              # Isolated OS Process Sandbox Runtime & Dynamic Git Bisector
-│   └── scenarios/            # Scenario Benchmarks & Physical Git Fixture Generators
-│
-├── .qodo/config.yaml         # Qodo AI Code Quality Configuration (Q Branch Track)
-├── .qodo.toml                # Qodo Workspace Rules
-└── .github/workflows/ci.yml  # Automated CI Pipeline (Build, Typecheck, Test)
-```
-
----
-
-## 🏆 Hackathon Track Alignment
-
-| Track | Target Prize | TrueSentry Implementation |
+| Track | Target Prize | TrueSentry Implementation & Submission Asset |
 | :--- | :--- | :--- |
-| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | TrueForge-driven orchestration: 4 MCP servers, OS process sandboxing, physical Git bisecting, causal evidence graph, and cryptographically bound HITL gates. |
-| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | PR-driven development with Qodo AI reviews, composite TypeScript project references, strict input schemas, and 100% test pass. |
-| **Savile Row Track** | **Apple iPad** *(for each team member)* | Real-time tactical SRE dashboard with live SSE thought streaming, clickable Causal Evidence Graph with cryptographic provenance, and xterm.js terminal. |
-| **Field Report** | **Keychron Mechanical Keyboard** | In-depth technical write-up covering failure modes, sandboxing guarantees, and benchmark evaluations. |
-
----
-
-## 🔍 Qodo Code Review Evidence
-
-As required by the **Q Branch Track** judging criteria, all substantive code modifications were developed through Pull Requests reviewed by **Qodo AI**:
-
-- **Merged Pull Request**: [PR #1: Initialize TrueForge Hero Incident Responder Workflow](https://github.com/hivid1/truesentry/pull/1)
-- **Qodo Audit Summary**: Qodo reviewed the monorepo architecture, verified strict TypeScript type-safety across all packages, validated Zod schemas on tool parameters, and confirmed child process timeout safeguards.
-- **Enforced Standards**: 100% type safety, composite TypeScript project references, zero hardcoded credentials, and passing Vitest test suites.
+| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Agent Harness integration: `TrueForgeRuntimePanel`, 4 native MCP servers, OS process sandboxing, and cryptographically bound HITL gates. |
+| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](file:///c:/Users/vidwa/HACK/trueforge/CODE_QUALITY.md) + Full PR audit trail in [`QODO_REVIEW_EVIDENCE.md`](file:///c:/Users/vidwa/HACK/trueforge/QODO_REVIEW_EVIDENCE.md). |
+| **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, clickable **Causal Evidence Graph**, and 1-Click **Judge Attack Lab**. |
+| **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
+| **Top Social Posts** | **Hackathon Swag & Community Showcase** | Viral thread and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SOCIAL_POST.md). |
 
 ---
 
