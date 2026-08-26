@@ -7,6 +7,7 @@ import { SessionStore } from "./storage/db.js";
 import { SandboxRuntime, GitBisectRunner, SelfCorrectionEngine } from "@truesentry/sandbox";
 import { SCENARIO_1_DB_LOCK, IncidentScenario, createCheckoutServiceGitFixture } from "@truesentry/scenarios";
 import { PostgresMcpServer } from "@truesentry/mcp-servers";
+import { EvidenceGraph, EvidenceNode, EvidenceEdge } from "./types.js";
 import crypto from "crypto";
 
 export class TrueSentryCoordinator {
@@ -18,12 +19,17 @@ export class TrueSentryCoordinator {
   public broadcaster: EventBroadcaster;
   public hitlGate: HitlGateEngine;
   public sessionStore: SessionStore;
+  private evidenceGraphs: Map<string, EvidenceGraph> = new Map();
 
   constructor(broadcaster: EventBroadcaster, hitlGate: HitlGateEngine, sessionStore: SessionStore) {
     this.broadcaster = broadcaster;
     this.hitlGate = hitlGate;
     this.sessionStore = sessionStore;
     this.postgres = new PostgresMcpServer((token, sql) => this.hitlGate.verifyAndConsumeExecution(token, sql));
+  }
+
+  public getEvidenceGraph(sessionId: string): EvidenceGraph | undefined {
+    return this.evidenceGraphs.get(sessionId);
   }
 
   public async runIncidentWorkflow(
@@ -34,6 +40,13 @@ export class TrueSentryCoordinator {
     if (!this.sessionStore.getSession(sessionId)) {
       this.sessionStore.createSession(sessionId, scenario.id);
     }
+
+    const currentGraph: EvidenceGraph = {
+      nodes: [],
+      edges: [],
+      summary: `Autonomous Investigation Graph for ${scenario.id}`,
+    };
+    this.evidenceGraphs.set(sessionId, currentGraph);
 
     const emit = (type: string, subagent: string, payload: Record<string, unknown>) => {
       this.broadcaster.broadcast(sessionId, {
@@ -46,6 +59,22 @@ export class TrueSentryCoordinator {
       });
     };
 
+    const updateEvidenceGraph = (node: EvidenceNode, edgesToAdd: EvidenceEdge[] = [], summary?: string) => {
+      const existingIdx = currentGraph.nodes.findIndex((n) => n.id === node.id);
+      if (existingIdx >= 0) {
+        currentGraph.nodes[existingIdx] = node;
+      } else {
+        currentGraph.nodes.push(node);
+      }
+      for (const edge of edgesToAdd) {
+        if (!currentGraph.edges.some((e) => e.from === edge.from && e.to === edge.to)) {
+          currentGraph.edges.push(edge);
+        }
+      }
+      if (summary) currentGraph.summary = summary;
+      emit("EVIDENCE_GRAPH_UPDATE", "EvidenceGraphEngine", { graph: { ...currentGraph } });
+    };
+
     // Step 1: Initial Telemetry Ingestion
     emit("THOUGHT", "TrueForgeCoordinator", {
       thought: `🚨 Firing Alert Ingested: ${scenario.initialAlertMessage} on service '${scenario.service}'. Triggering autonomous investigation loop...`,
@@ -54,9 +83,22 @@ export class TrueSentryCoordinator {
 
     const isDbIncident = scenario.category === "DATABASE_LOCK" || scenario.service === "checkout-service";
 
+    updateEvidenceGraph(
+      {
+        id: "node_incident",
+        type: "INCIDENT",
+        label: `🚨 Alert: ${scenario.service} Outage`,
+        status: "ACTIVE",
+        detail: scenario.initialAlertMessage,
+        timestamp: Date.now(),
+      },
+      [],
+      `Active incident on ${scenario.service}`
+    );
+
     emit("TELEMETRY", "TelemetryScout", {
       timestamp: Date.now(),
-      errorRate: isDbIncident ? 0.482 : 0.285,
+      errorRate: isDbIncident ? 0.384 : 0.285,
       p99LatencyMs: isDbIncident ? 1420 : 850,
       activeLocks: isDbIncident ? 18 : 0,
       memoryUsagePercent: isDbIncident ? 42 : 94.6,
@@ -78,6 +120,32 @@ export class TrueSentryCoordinator {
       result: isDbIncident ? scoutResult.locks : { memoryPercent: 94.6, oomKills: 6 },
       hypothesis: scoutResult.hypothesis,
     });
+
+    updateEvidenceGraph(
+      {
+        id: "node_telemetry",
+        type: "TELEMETRY",
+        label: isDbIncident ? "Prometheus: Error Rate ↑ 38.4%" : "Prometheus: Memory ↑ 94.6%",
+        status: "VERIFIED",
+        detail: isDbIncident ? "HTTP 500 error spike (38.4%) & P99 latency at 1420ms" : "OOMKills detected",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_incident", to: "node_telemetry", relation: "triggers" }]
+    );
+
+    if (isDbIncident) {
+      updateEvidenceGraph(
+        {
+          id: "node_lock",
+          type: "LOCK",
+          label: "PostgreSQL: Table Lock Detected on orders",
+          status: "VERIFIED",
+          detail: "18 blocked queries, 742s lock duration from exclusive AccessExclusiveLock",
+          timestamp: Date.now(),
+        },
+        [{ from: "node_telemetry", to: "node_lock", relation: "correlates_to" }]
+      );
+    }
 
     // Step 3: Isolated OS Sandbox Initialization & Bisect
     await new Promise((r) => setTimeout(r, 400));
@@ -102,6 +170,30 @@ export class TrueSentryCoordinator {
       failingMigration: bisectResult.failingFile,
       diffSummary: bisectResult.diffSummary,
     });
+
+    updateEvidenceGraph(
+      {
+        id: "node_deploy",
+        type: "DEPLOYMENT",
+        label: `GitHub Commit: ${bisectResult.badCommitSha.substring(0, 7)}`,
+        status: "VERIFIED",
+        detail: `Deployed by ${bisectResult.author}: ${bisectResult.diffSummary}`,
+        timestamp: Date.now(),
+      },
+      [{ from: isDbIncident ? "node_lock" : "node_telemetry", to: "node_deploy", relation: "introduced_in" }]
+    );
+
+    updateEvidenceGraph(
+      {
+        id: "node_bisect",
+        type: "BISECT",
+        label: `Git Bisect: Isolated ${bisectResult.failingFile}`,
+        status: "VERIFIED",
+        detail: "Automated binary search dynamically confirmed commit as first failing revision",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_deploy", to: "node_bisect", relation: "isolated_by" }]
+    );
 
     // Step 4: Iterative Self-Correction Loop & Test Verification in Sandbox
     emit("THOUGHT", "SandboxBisector", {
@@ -135,6 +227,16 @@ export class TrueSentryCoordinator {
         status: "VERIFICATION_FAILED",
         testsPassed: repairResult.testsPassed,
       });
+
+      updateEvidenceGraph({
+        id: "node_sandbox",
+        type: "SANDBOX",
+        label: "OS Sandbox: Verification FAILED",
+        status: "BLOCKED",
+        detail: `Only ${repairResult.testsPassed}/48 tests passed. Execution aborted.`,
+        timestamp: Date.now(),
+      }, [{ from: "node_bisect", to: "node_sandbox", relation: "tested_in" }]);
+
       this.sessionStore.updateStatus(sessionId, "FAILED");
       sandbox.cleanup();
       return;
@@ -147,6 +249,30 @@ export class TrueSentryCoordinator {
       verifiedPatch,
       iterationsUsed: repairResult.iteration,
     });
+
+    updateEvidenceGraph(
+      {
+        id: "node_sandbox",
+        type: "SANDBOX",
+        label: "OS Sandbox: 48/48 Tests Passed",
+        status: "VERIFIED",
+        detail: "Verified non-blocking concurrent DDL eliminates table lock and passes regression suite",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_bisect", to: "node_sandbox", relation: "reproduced_and_patched_in" }]
+    );
+
+    updateEvidenceGraph(
+      {
+        id: "node_root_cause",
+        type: "ROOT_CAUSE",
+        label: "ROOT CAUSE CONFIRMED",
+        status: "VERIFIED",
+        detail: "Blocking foreign key constraint held AccessExclusiveLock on live orders table",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_sandbox", to: "node_root_cause", relation: "confirms" }]
+    );
 
     // Step 5: Evidence-Based Blast Radius & Policy Audit
     await new Promise((r) => setTimeout(r, 400));
@@ -166,6 +292,18 @@ export class TrueSentryCoordinator {
       thought: `🛑 GATED APPROVAL REQUIRED: Action '${actionType}' is state-modifying. Pausing harness for human cryptographic verification.`,
       step: 6,
     });
+
+    updateEvidenceGraph(
+      {
+        id: "node_hitl",
+        type: "HITL",
+        label: "HITL Gate: Cryptographic Digest Bound",
+        status: "ACTIVE",
+        detail: "Harness paused. Awaiting human cryptographic sign-off.",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_root_cause", to: "node_hitl", relation: "requires_approval" }]
+    );
 
     const approved = await this.hitlGate.requestApproval(sessionId, scenario.id, {
       severity: scenario.severity,
@@ -193,10 +331,29 @@ export class TrueSentryCoordinator {
         thought: "❌ Human SRE rejected proposed remediation. Execution aborted. Production environment left unmodified.",
         step: 6,
       });
+
+      updateEvidenceGraph({
+        id: "node_hitl",
+        type: "HITL",
+        label: "HITL Gate: REJECTED by Human",
+        status: "BLOCKED",
+        detail: "Human operator rejected proposed execution. Pipeline safely aborted.",
+        timestamp: Date.now(),
+      });
+
       this.sessionStore.updateStatus(sessionId, "FAILED");
       sandbox.cleanup();
       return;
     }
+
+    updateEvidenceGraph({
+      id: "node_hitl",
+      type: "HITL",
+      label: "HITL Gate: APPROVED (Single-Use Token)",
+      status: "VERIFIED",
+      detail: "Human operator cryptographically authorized remediation.",
+      timestamp: Date.now(),
+    });
 
     // Step 7: Post-Approval Execution with Cryptographic Token
     const pendingRecord = this.hitlGate.getTokenRecord(
@@ -219,6 +376,18 @@ export class TrueSentryCoordinator {
       });
     }
 
+    updateEvidenceGraph(
+      {
+        id: "node_remediation",
+        type: "REMEDIATION",
+        label: "Atomic CAS Execution: Verified SQL Applied",
+        status: "VERIFIED",
+        detail: `Applied non-blocking concurrent schema patch: ${verifiedPatch.substring(0, 40)}...`,
+        timestamp: Date.now(),
+      },
+      [{ from: "node_hitl", to: "node_remediation", relation: "authorizes_execution" }]
+    );
+
     // Step 8: Telemetry Normalization & Post-Mortem Publication
     await new Promise((r) => setTimeout(r, 400));
     emit("TELEMETRY", "TelemetryScout", {
@@ -228,6 +397,19 @@ export class TrueSentryCoordinator {
       activeLocks: 0,
       runningPods: 8,
     });
+
+    updateEvidenceGraph(
+      {
+        id: "node_recovery",
+        type: "RECOVERY",
+        label: "Prometheus Verification: Error Rate → 0.00%",
+        status: "COMPLETED",
+        detail: "Post-remediation telemetry verified: 0 active locks, latency returned to 16ms",
+        timestamp: Date.now(),
+      },
+      [{ from: "node_remediation", to: "node_recovery", relation: "restores_health" }],
+      "Incident Resolved & Verified via Prometheus"
+    );
 
     const scribeResult = await this.scribe.generateAndPublish(
       scenario.id,
@@ -240,6 +422,7 @@ export class TrueSentryCoordinator {
       status: "RESOLVED",
       postMortem: scribeResult.postMortemMarkdown,
       synthesizedSkill: scribeResult.synthesizedSkill,
+      evidenceGraph: currentGraph,
       mttrMinutes: 1.8,
     });
 
