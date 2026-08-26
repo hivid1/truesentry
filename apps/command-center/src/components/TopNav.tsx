@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Shield, Zap, Activity, Cpu } from "lucide-react";
+import { Shield, Zap, Activity, Cpu, ShieldCheck } from "lucide-react";
 
 interface TopNavProps {
   sessionId: string;
@@ -43,16 +43,16 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-6 text-xs font-mono text-zinc-400">
-        <div className="flex items-center gap-2">
-          <Cpu className="w-3.5 h-3.5 text-zinc-500" />
-          <span>Model: <strong className="text-zinc-200">Gemini 2.5 Pro</strong></span>
-        </div>
+      {/* Central Core Thesis Banner */}
+      <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/30 text-[11px] font-mono font-bold text-cyan-300">
+        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+        <span>THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT.</span>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Harness: <strong className="text-cyan-300">HITL Gated</strong></span>
-        </div>
+      <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
+        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-full hidden sm:inline">
+          Safety Benchmark: 100/100 (7 Threat Vectors)
+        </span>
 
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-400 shadow-[0_0_8px_#10B981]" : "bg-rose-500"}`} />
