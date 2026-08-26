@@ -19,6 +19,7 @@
 | **[PR #13](https://github.com/hivid1/truesentry/pull/13)** | `packages/core/src/hitl/` | Noted that hardcoding `48` tests in invariant checks creates brittle coupling. | Refactored to require `testsPassed === totalTests && totalTests > 0`. | **Merged** ✅ |
 | **[PR #14](https://github.com/hivid1/truesentry/pull/14)** | `docs/LIMITATIONS_AND_BOUNDARIES.md` | Recommended publishing empirical benchmark latencies instead of qualitative claims. | Added physical measured timing table across all verification suites. | **Merged** ✅ |
 | **[PR #15](https://github.com/hivid1/truesentry/pull/15)** | `apps/command-center`, `docs/` | Recommended surfacing live TrueForge runtime status and red-team attack modes. | Added `TrueForgeRuntimePanel`, `AttackLab`, `CODE_QUALITY.md`, and technical case study. | **Merged** ✅ |
+| **[PR #16](https://github.com/hivid1/truesentry/pull/16)** | `packages/core`, `apps/command-center` | Recommended surfacing explicit agent state clarity and verifying reconnect event history. | Added `AgentStateHeader`, `EventBroadcaster` historical replay, model switcher, and test #13. | **Merged** ✅ |
 
 ---
 

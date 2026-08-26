@@ -90,7 +90,10 @@ graph TD
 ## 🚀 Quickstart (Zero-Config Setup)
 
 ### Prerequisites
-- Node.js >= 20.x
+### Run the Full Hackathon Submission Preflight Auditor
+```bash
+npm run verify:submission
+```
 
 ### Run the Master Verification (All 13 Criteria)
 ```bash
@@ -126,6 +129,7 @@ Open **http://localhost:3000** to access the real-time SRE dashboard, inspect th
 | **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, `AgentStateHeader` ("Now / Next / Waiting For"), clickable **Causal Evidence Graph**, and **Judge Red-Team Attack Lab**. |
 | **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
 | **Top Social Posts** | **Hackathon Swag & Community Showcase** | 5-post attack campaign and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SOCIAL_POST.md). |
+| **Judge Defense & Scorecard** | **Hostile Q&A & Category Audit** | Technical defense in [`docs/HOSTILE_JUDGE_QA.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/HOSTILE_JUDGE_QA.md) + Full rubric audit in [`docs/SCORECARD_AND_PRIZE_AUDIT.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SCORECARD_AND_PRIZE_AUDIT.md). |
 
 ---
 

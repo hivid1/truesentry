@@ -13,6 +13,7 @@
     "test": "npm run test --workspaces",
     "type-check": "npm run type-check --workspaces",
     "verify": "node scripts/verify-all.js",
+    "verify:submission": "node scripts/verify-submission.js",
     "test:security": "npx vitest run packages/core/tests/security_benchmark.test.ts",
     "demo": "node scripts/run-demo.js",
     "demo:record": "node scripts/record-demo.js",
