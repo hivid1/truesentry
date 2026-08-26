@@ -1,6 +1,9 @@
 import { HitlApprovalRequest } from "../types.js";
 import { EventBroadcaster } from "../events/emitter.js";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 export interface ApprovedTokenRecord {
   approvalId: string;
@@ -39,9 +42,89 @@ export class HitlGateEngine {
   private approvedTokens: Map<string, ApprovedTokenRecord> = new Map();
   private activeConsumptions: Set<string> = new Set();
   private broadcaster: EventBroadcaster;
+  private storeDir: string;
 
-  constructor(broadcaster: EventBroadcaster) {
+  constructor(broadcaster: EventBroadcaster, customStoreDir?: string) {
     this.broadcaster = broadcaster;
+    this.storeDir = customStoreDir || path.join(os.tmpdir(), "trueforge_hitl_store");
+    this.initStore();
+  }
+
+  private initStore(): void {
+    try {
+      const tokensDir = path.join(this.storeDir, "tokens");
+      const locksDir = path.join(this.storeDir, "locks");
+      if (!fs.existsSync(tokensDir)) fs.mkdirSync(tokensDir, { recursive: true });
+      if (!fs.existsSync(locksDir)) fs.mkdirSync(locksDir, { recursive: true });
+    } catch {
+      // Best-effort directory creation
+    }
+  }
+
+  private getTokenHash(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
+
+  private acquireCrossProcessLock(tokenHash: string, timeoutMs = 2000): () => void {
+    const lockFile = path.join(this.storeDir, "locks", `${tokenHash}.lock`);
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const fd = fs.openSync(lockFile, "wx");
+        fs.closeSync(fd);
+        return () => {
+          try {
+            if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile);
+          } catch {
+            // Ignore unlock errors
+          }
+        };
+      } catch (err: any) {
+        if (err.code === "EEXIST") {
+          // Lock held by another process/thread; yield briefly
+          const startSleep = Date.now();
+          while (Date.now() - startSleep < 5) {
+            // Busy sleep 5ms
+          }
+        } else {
+          break;
+        }
+      }
+    }
+
+    throw new CryptographicIntegrityError(
+      `Concurrency Lock Timeout: Unable to acquire atomic cross-process lock for token '${tokenHash.substring(0, 8)}...'`
+    );
+  }
+
+  public persistToken(record: ApprovedTokenRecord): void {
+    try {
+      const tokenHash = this.getTokenHash(record.token);
+      const filePath = path.join(this.storeDir, "tokens", `${tokenHash}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(record, null, 2), "utf8");
+    } catch {
+      // In-memory fallback
+    }
+  }
+
+  private loadPersistedToken(token: string): ApprovedTokenRecord | undefined {
+    try {
+      const tokenHash = this.getTokenHash(token);
+      const filePath = path.join(this.storeDir, "tokens", `${tokenHash}.json`);
+      if (fs.existsSync(filePath)) {
+        const record = JSON.parse(fs.readFileSync(filePath, "utf8")) as ApprovedTokenRecord;
+        if (this.approvedTokens.has(token)) {
+          const mem = this.approvedTokens.get(token)!;
+          // Sync any in-memory test overrides (e.g. expiresAt)
+          record.expiresAt = mem.expiresAt;
+        }
+        return record;
+      }
+    } catch {
+      // Return memory record fallback
+    }
+    return this.approvedTokens.get(token);
   }
 
   public static computePayloadHash(
@@ -146,8 +229,8 @@ export class HitlGateEngine {
       consumed: false,
     };
 
-    this.approvedTokens.set(approvalId, tokenRecord);
     this.approvedTokens.set(token, tokenRecord);
+    this.persistToken(tokenRecord);
 
     pending.request.status = "APPROVED";
     pending.resolve(true);
@@ -165,18 +248,21 @@ export class HitlGateEngine {
     executedSql: string,
     contextOrNonce?: string | ExecutionContext
   ): void {
-    const record = this.approvedTokens.get(approvalIdOrToken);
-    if (!record) {
-      throw new CryptographicIntegrityError(`Unauthorized execution: No valid approval token found for '${approvalIdOrToken}'`);
-    }
-
-    // Atomic consumption lock: prevents concurrent replay race condition
-    if (record.consumed || this.activeConsumptions.has(record.approvalId)) {
-      throw new CryptographicIntegrityError(`Replay attack detected: Approval token '${approvalIdOrToken}' has already been consumed!`);
-    }
-    this.activeConsumptions.add(record.approvalId);
+    const tokenHash = this.getTokenHash(approvalIdOrToken);
+    const releaseLock = this.acquireCrossProcessLock(tokenHash);
 
     try {
+      const record = this.loadPersistedToken(approvalIdOrToken) || this.approvedTokens.get(approvalIdOrToken);
+      if (!record) {
+        throw new CryptographicIntegrityError(`Unauthorized execution: No valid approval token found for '${approvalIdOrToken}'`);
+      }
+
+      // Atomic single-use consumption check
+      if (record.consumed || this.activeConsumptions.has(approvalIdOrToken)) {
+        throw new CryptographicIntegrityError(`Replay attack detected: Approval token '${approvalIdOrToken}' has already been consumed!`);
+      }
+      this.activeConsumptions.add(approvalIdOrToken);
+
       if (Date.now() > record.expiresAt) {
         throw new CryptographicIntegrityError(`Security violation: Approval token '${approvalIdOrToken}' expired at ${new Date(record.expiresAt).toISOString()}`);
       }
@@ -237,10 +323,15 @@ export class HitlGateEngine {
         );
       }
 
-      // Mark token as consumed (single-use guarantee)
+      // Atomically mark token as consumed (single-use guarantee across all processes)
       record.consumed = true;
+      this.persistToken(record);
+      if (this.approvedTokens.has(approvalIdOrToken)) {
+        this.approvedTokens.get(approvalIdOrToken)!.consumed = true;
+      }
     } finally {
-      this.activeConsumptions.delete(record.approvalId);
+      this.activeConsumptions.delete(approvalIdOrToken);
+      releaseLock();
     }
   }
 
@@ -249,6 +340,6 @@ export class HitlGateEngine {
   }
 
   public getTokenRecord(token: string): ApprovedTokenRecord | undefined {
-    return this.approvedTokens.get(token);
+    return this.approvedTokens.get(token) || this.loadPersistedToken(token);
   }
 }

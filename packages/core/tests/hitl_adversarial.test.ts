@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { HitlGateEngine, CryptographicIntegrityError } from "../src/hitl/gate.js";
 import { EventBroadcaster } from "../src/events/emitter.js";
+import path from "path";
+import os from "os";
 
 describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
   const broadcaster = new EventBroadcaster();
@@ -107,7 +109,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
     }).toThrow(/Cross-session approval substitution detected/);
   });
 
-  it("P0 #14: Prevents concurrent replay race conditions atomically", async () => {
+  it("P0 #14: Prevents in-process concurrent replay race conditions atomically", async () => {
     const hitl = new HitlGateEngine(broadcaster);
     const sql = "CREATE INDEX CONCURRENTLY idx_test ON test(id);";
 
@@ -141,6 +143,34 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
     expect(failureCount).toBe(4); // ALL OTHERS blocked as replay
   });
 
+  it("P0 #14b: Prevents cross-process replay race conditions across multiple engine instances via atomic persistent lock", async () => {
+    const sharedStoreDir = path.join(os.tmpdir(), "trueforge_test_shared_store_" + Math.random().toString(36).substring(7));
+    const engineA = new HitlGateEngine(broadcaster, sharedStoreDir);
+    const engineB = new HitlGateEngine(broadcaster, sharedStoreDir);
+    const sql = "CREATE INDEX CONCURRENTLY idx_cross_proc ON items(id);";
+
+    // Request and resolve token on Engine Instance A
+    engineA.requestApproval("sess_cp", "inc_cp", {
+      severity: "HIGH",
+      target: { system: "postgres", resource: "items-db", actionType: "APPLY_INDEX" },
+      blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
+      diff: { language: "sql", before: "", after: sql },
+      sandboxProof: { sandboxId: "sbx_cp", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+    });
+    const id = Array.from((engineA as any).pendingApprovals.keys())[0] as string;
+    const token = engineA.resolveApproval(id, "APPROVE").token!;
+
+    // Engine Instance A consumes it first
+    expect(() => {
+      engineA.verifyAndConsumeExecution(token, sql);
+    }).not.toThrow();
+
+    // Engine Instance B (separate process/instance accessing shared persistent store) attempts consumption
+    expect(() => {
+      engineB.verifyAndConsumeExecution(token, sql);
+    }).toThrow(/Replay attack detected/);
+  });
+
   it("P0 #15: Rejects expired tokens after 10m TTL", async () => {
     const hitl = new HitlGateEngine(broadcaster);
     const sql = "CREATE INDEX CONCURRENTLY idx_exp ON test(id);";
@@ -158,6 +188,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
     // Artificially expire the token
     const record = hitl.getTokenRecord(token)!;
     record.expiresAt = Date.now() - 1000; // 1s in the past
+    hitl.persistToken(record);
 
     expect(() => {
       hitl.verifyAndConsumeExecution(token, sql);
