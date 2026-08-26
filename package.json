@@ -12,6 +12,7 @@
     "build": "npm run build --workspace=@truesentry/mcp-servers && npm run build --workspace=@truesentry/sandbox && npm run build --workspace=@truesentry/scenarios && npm run build --workspace=@truesentry/core && npm run build --workspace=@truesentry/cli && npm run build --workspace=@truesentry/command-center",
     "test": "npm run test --workspaces",
     "type-check": "npm run type-check --workspaces",
+    "verify": "node scripts/verify-all.js",
     "demo": "node scripts/run-demo.js",
     "start:harness": "npm run start --workspace=@truesentry/core",
     "start:ui": "npm run dev --workspace=@truesentry/command-center"
