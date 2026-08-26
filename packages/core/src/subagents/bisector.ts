@@ -18,7 +18,8 @@ ALTER TABLE orders DROP CONSTRAINT fk_user_id;`;
       bisectResult,
       repairState,
       verifiedPatch: repairState.finalPatch,
-      testsPassed: 48,
+      testsPassed: repairState.testsPassed,
+      totalTests: repairState.totalTests,
     };
   }
 }

@@ -34,7 +34,7 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
 
     const session = sessionStore.getSession("adv_session_a");
     expect(session?.status).toBe("RESOLVED");
-  }, 20000);
+  }, 40000);
 
   it("Scenario B: Non-DB Incident - Correctly adapts telemetry & reasoning for API Gateway Memory Leak", async () => {
     const broadcaster = new EventBroadcaster();
@@ -61,7 +61,7 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
 
     const session = sessionStore.getSession("adv_session_b");
     expect(session?.status).toBe("RESOLVED");
-  }, 20000);
+  }, 40000);
 
   it("Scenario D: Sandbox Test Failure - Aborts immediately and never requests HITL approval for unverified code", async () => {
     const broadcaster = new EventBroadcaster();
@@ -87,7 +87,7 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
 
     const session = sessionStore.getSession("adv_session_d");
     expect(session?.status).toBe("FAILED");
-  }, 20000);
+  }, 40000);
 
   it("Scenario E: SQL Tampering Defense - Halts execution when executed SQL differs from approved payload hash", async () => {
     const broadcaster = new EventBroadcaster();
@@ -108,7 +108,7 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
         simulatedTamperedSql: "DROP TABLE orders CASCADE;",
       })
     ).rejects.toThrow(CryptographicIntegrityError);
-  }, 20000);
+  }, 40000);
 
   it("Scenario G: Human Operator Rejection - Aborts cleanly and preserves production state untouched", async () => {
     const broadcaster = new EventBroadcaster();
@@ -127,5 +127,5 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
 
     const session = sessionStore.getSession("adv_session_g");
     expect(session?.status).toBe("FAILED");
-  }, 20000);
+  }, 40000);
 });

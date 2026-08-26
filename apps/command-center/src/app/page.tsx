@@ -19,7 +19,7 @@ import { AttackLab } from "@/components/AttackLab";
 import { HitlApprovalRequest, AgentThoughtEvent, TelemetryPoint } from "@/types/ui";
 import { FileText, ShieldAlert, Cpu, Activity } from "lucide-react";
 
-const HARNESS_URL = "http://localhost:8790";
+const HARNESS_URL = process.env.NEXT_PUBLIC_HARNESS_URL || "http://localhost:8790";
 
 export default function CommandCenterPage() {
   const [sessionId, setSessionId] = useState<string>("ses_init");

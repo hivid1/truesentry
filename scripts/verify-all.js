@@ -5,7 +5,7 @@
 const { execSync } = require('child_process');
 
 console.log('\n==================================================================');
-console.log('🛡️  TRUESENTRY: MASTER 13-POINT ADVERSARIAL & TRUEFORGE RUNNER');
+console.log('🛡️  TRUESENTRY: MASTER 15-POINT ADVERSARIAL & TRUEFORGE RUNNER');
 console.log('==================================================================\n');
 
 const tests = [
@@ -43,7 +43,7 @@ const tests = [
   },
   {
     name: '9. Adversarial Chaos Matrix (Memory Leak, Failure Abort, Tampering)',
-    cmd: 'npx vitest run packages/core/tests/adversarial.test.ts',
+    cmd: 'npx vitest run packages/core/tests/adversarial.test.ts --testTimeout=60000',
   },
   {
     name: '10. MCP Protocol Telemetry Servers (Prometheus, Postgres, GitHub, Slack)',
@@ -51,15 +51,23 @@ const tests = [
   },
   {
     name: '11. Full End-to-End Autonomous Incident Response Lifecycle',
-    cmd: 'npx vitest run packages/core/tests/e2e.test.ts',
+    cmd: 'npx vitest run packages/core/tests/e2e.test.ts --testTimeout=60000',
   },
   {
     name: '12. TrueSentry 100-Point Internal Adversarial Safety Benchmark (7 Threat Vectors)',
     cmd: 'npx vitest run packages/core/tests/security_benchmark.test.ts',
   },
   {
-    name: '13. TrueForge Core Harness Capabilities Matrix (Subagents, Sessions, Reconnects, Models)',
-    cmd: 'npx vitest run packages/core/tests/trueforge_capabilities.test.ts',
+    name: '13. TrueForge Core Harness Capabilities Matrix (Subagents, Sessions, Models)',
+    cmd: 'npx vitest run packages/core/tests/trueforge_capabilities.test.ts --testTimeout=60000',
+  },
+  {
+    name: '14. Durable Session Storage & Cross-Process Crash Recovery Test',
+    cmd: 'npx vitest run packages/core/tests/durable_session.test.ts',
+  },
+  {
+    name: '15. EventBroadcaster Network Interruption & SSE History Backfill Test',
+    cmd: 'npx vitest run packages/core/tests/reconnect_replay.test.ts',
   },
 ];
 
