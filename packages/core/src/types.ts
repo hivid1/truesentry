@@ -30,6 +30,16 @@ export interface HitlApprovalRequest {
   status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
+export type EvidenceSource =
+  | "PROMETHEUS_MCP"
+  | "POSTGRES_MCP"
+  | "GITHUB_MCP"
+  | "GIT_BISECT_RUNNER"
+  | "SANDBOX_RUNTIME"
+  | "POLICY_ENGINE"
+  | "HITL_GATE"
+  | "POST_MORTEM_SCRIBE";
+
 export interface EvidenceNode {
   id: string;
   label: string;
@@ -37,18 +47,27 @@ export interface EvidenceNode {
   status: "ACTIVE" | "VERIFIED" | "BLOCKED" | "COMPLETED";
   detail: string;
   timestamp: number;
+  incidentId: string;
+  source: EvidenceSource;
+  queryOrCommand?: string;
+  rawObservation?: Record<string, unknown> | string;
+  evidenceHash: string;
+  confidence: number;
 }
 
 export interface EvidenceEdge {
   from: string;
   to: string;
   relation: string;
+  evidenceRefHash?: string;
 }
 
 export interface EvidenceGraph {
+  incidentId: string;
   nodes: EvidenceNode[];
   edges: EvidenceEdge[];
   summary: string;
+  isVerifiedChain?: boolean;
 }
 
 export interface AgentEvent {
@@ -66,4 +85,9 @@ export interface TelemetryPoint {
   p99LatencyMs: number;
   activeLocks: number;
   runningPods: number;
+  provenance?: {
+    source: string;
+    query: string;
+    queryTimestamp: number;
+  };
 }

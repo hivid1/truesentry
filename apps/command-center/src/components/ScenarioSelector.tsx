@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Play, Flame, Cpu, ShieldCheck } from "lucide-react";
+import { Flame, Cpu, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface ScenarioSelectorProps {
   onTrigger: (scenarioId: string) => void;
@@ -11,11 +11,11 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({ onTrigger, i
   return (
     <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-3">
       <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-        <span className="font-semibold uppercase tracking-wider">Benchmark Scenarios</span>
+        <span className="font-semibold uppercase tracking-wider">Benchmark & Adversarial Scenarios</span>
         <span className="text-[10px] text-zinc-500">1-Click Live Test</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => onTrigger("scenario_1_db_lock")}
           disabled={isLoading}
@@ -55,6 +55,20 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({ onTrigger, i
           </div>
           <span className="text-[10px] text-zinc-300 font-sans leading-tight">
             Malicious Dep Quarantine
+          </span>
+        </button>
+
+        <button
+          onClick={() => onTrigger("scenario_failed_patch_safe_abort")}
+          disabled={isLoading}
+          className="p-2.5 rounded-lg border border-red-500/40 bg-red-950/30 hover:bg-red-900/40 text-left transition-colors flex flex-col justify-between gap-1 disabled:opacity-50 cursor-pointer"
+        >
+          <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-red-400">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Safe-Abort Demo</span>
+          </div>
+          <span className="text-[10px] text-zinc-300 font-sans leading-tight">
+            Sandbox Fail $\to$ Zero HITL / Execution
           </span>
         </button>
       </div>
