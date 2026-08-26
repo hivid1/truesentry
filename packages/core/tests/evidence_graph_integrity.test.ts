@@ -128,10 +128,10 @@ describe("🛡️ Evidence Graph Cryptographic Provenance & Causality Invariant 
       label: "Sandbox",
       type: "SANDBOX",
       status: "VERIFIED",
-      detail: "48/48 passed",
+      detail: "12/12 passed",
       incidentId,
       source: "SANDBOX_RUNTIME",
-      rawObservation: { testsPassed: 48, totalTests: 48 },
+      rawObservation: { testsPassed: 12, totalTests: 12 },
     });
 
     const rootCauseNode = EvidenceGraphValidator.createNode({
@@ -201,10 +201,10 @@ describe("🛡️ Evidence Graph Cryptographic Provenance & Causality Invariant 
       label: "Sandbox",
       type: "SANDBOX",
       status: "VERIFIED",
-      detail: "48/48 passed",
+      detail: "12/12 passed",
       incidentId,
       source: "SANDBOX_RUNTIME",
-      rawObservation: { testsPassed: 48, totalTests: 48 },
+      rawObservation: { testsPassed: 12, totalTests: 12 },
     });
 
     const rootCauseNode = EvidenceGraphValidator.createNode({
@@ -353,7 +353,7 @@ describe("🛡️ Evidence Graph Cryptographic Provenance & Causality Invariant 
     }
   });
 
-  it("9. Invariant: Rejects incomplete regression suite (e.g. 10/48 passed)", () => {
+  it("9. Invariant: Rejects incomplete regression suite (e.g. 8/12 passed)", () => {
     const incidentNode = EvidenceGraphValidator.createNode({
       id: "node_incident",
       label: "Alert",
@@ -369,10 +369,10 @@ describe("🛡️ Evidence Graph Cryptographic Provenance & Causality Invariant 
       label: "Partial Sandbox",
       type: "SANDBOX",
       status: "VERIFIED",
-      detail: "10/48 passed",
+      detail: "8/12 passed",
       incidentId,
       source: "SANDBOX_RUNTIME",
-      rawObservation: { testsPassed: 10, totalTests: 48 }, // Incomplete!
+      rawObservation: { testsPassed: 8, totalTests: 12 }, // Incomplete!
     });
 
     const rootCauseNode = EvidenceGraphValidator.createNode({

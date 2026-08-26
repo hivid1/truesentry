@@ -104,7 +104,43 @@ export class MultiModelRouter {
       }
     }
 
-    // 3. Check for local Ollama instance
+    // 3. Check for live Anthropic API Key
+    if (process.env.ANTHROPIC_API_KEY && (model.startsWith("claude") || model.includes("sonnet"))) {
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-3-7-sonnet-20250219",
+            max_tokens: 1024,
+            ...(request.systemPrompt ? { system: request.systemPrompt } : {}),
+            messages: [{ role: "user", content: request.prompt }],
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.content?.[0]?.text || "";
+          const promptTokens = data.usage?.input_tokens || Math.ceil(request.prompt.length / 4);
+          const completionTokens = data.usage?.output_tokens || Math.ceil(text.length / 4);
+          return {
+            content: text,
+            modelUsed: "claude-3-7-sonnet",
+            provider: "anthropic",
+            tokensUsed: { prompt: promptTokens, completion: completionTokens, total: promptTokens + completionTokens },
+            costUsd: promptTokens * 0.000003 + completionTokens * 0.000015,
+            latencyMs: Date.now() - startTime,
+          };
+        }
+      } catch {
+        // Fall back to deterministic local reasoning
+      }
+    }
+
+    // 4. Check for local Ollama instance
     if (process.env.OLLAMA_BASE_URL) {
       try {
         const res = await fetch(`${process.env.OLLAMA_BASE_URL}/api/generate`, {

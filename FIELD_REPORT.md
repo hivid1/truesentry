@@ -33,7 +33,7 @@ graph TD
     subgraph "Phase 2: Safe Sandbox Reproduction"
         HARNESS --> SANDBOX[TrueForge Isolated Sandbox Container]
         SANDBOX --> BISECT[Run Git Bisect: Pinpoints Migration 049]
-        SANDBOX --> TEST[Test Concurrent Rollback Patch: 48/48 Tests Pass]
+        SANDBOX --> TEST[Test Concurrent Rollback Patch: 100% Tests Pass]
     end
     
     subgraph "Phase 3: The Gated Safety Check"

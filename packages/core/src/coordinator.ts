@@ -226,6 +226,7 @@ export class TrueSentryCoordinator {
       repairResult = {
         success: false,
         testsPassed: 0,
+        totalTests: 10,
         iteration: 3,
         finalPatch: undefined,
       };
@@ -235,11 +236,24 @@ export class TrueSentryCoordinator {
         `ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);`
       );
     }
-    const totalTests = repairResult.totalTests || 48;
-    const testsPassed = repairResult.testsPassed || 0;
 
-    // Adversarial Guard: Never proceed to HITL if sandbox verification fails
-    if (!repairResult.success || testsPassed < totalTests || totalTests === 0) {
+    const rawTotal = repairResult?.totalTests;
+    const rawPassed = repairResult?.testsPassed;
+
+    // Fail-Closed Dynamic Invariant Validation:
+    // Assert strictly valid numeric counts: 0 <= testsPassed <= totalTests, totalTests > 0
+    const isValidTestCount =
+      Number.isInteger(rawTotal) &&
+      rawTotal > 0 &&
+      Number.isInteger(rawPassed) &&
+      rawPassed >= 0 &&
+      rawPassed <= rawTotal;
+
+    const totalTests = isValidTestCount ? rawTotal : (Number.isInteger(rawTotal) && rawTotal > 0 ? rawTotal : 0);
+    const testsPassed = isValidTestCount ? rawPassed : (Number.isInteger(rawPassed) && rawPassed >= 0 ? rawPassed : 0);
+
+    // Adversarial Guard: Never proceed to HITL if sandbox verification fails, counts are malformed, or regressions exist
+    if (!isValidTestCount || !repairResult.success || testsPassed !== totalTests || totalTests === 0) {
       emit("THOUGHT", "TrueForgeCoordinator", {
         thought: `❌ SANDBOX VERIFICATION FAILED: Remediation patch failed regression testing inside isolated sandbox (${testsPassed}/${totalTests} passed). Aborting execution before HITL gate.`,
         step: 4,

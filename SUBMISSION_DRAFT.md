@@ -29,7 +29,7 @@ TrueSentry is an autonomous Site Reliability Engineering (SRE) agent designed to
 
 When a critical alert fires (e.g. checkout 500 error spike to 48.2%), TrueSentry uses TrueForge's runtime superpowers:
 1. **MCP Connectivity**: Connects to Prometheus (metric queries), PostgreSQL (inspecting pg_locks table contention), GitHub (deploy logs), and Slack (alert channels).
-2. **Isolated Sandboxing**: TrueForge spins up an isolated container sandbox to clone the repo, run automated git bisect, reproduce the lock timeout, and validate a rollback patch across 48 unit tests.
+2. **Isolated Sandboxing**: TrueForge spins up an isolated container sandbox to clone the repo, run automated git bisect, reproduce the lock timeout, and validate a rollback patch across the full regression test suite.
 3. **State-Gated Human-in-the-Loop (HITL)**: Before applying the rollback to live production, TrueForge pauses execution. On our Next.js Command Center, an interactive Approval Card displays the Monaco SQL diff, blast-radius risk gauge (74/100), and 0-data-loss proof.
 4. **Subagent Swarms**: Coordinator delegates work across specialized workers: Telemetry Scout, Sandbox Bisector, Blast-Radius Auditor, and Post-Mortem Scribe.
 5. **Code Quality**: Built with 100% TypeScript strict typing, Vitest test suites across all packages, and audited with Qodo AI PR reviews.

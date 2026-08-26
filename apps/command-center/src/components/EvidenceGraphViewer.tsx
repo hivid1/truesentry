@@ -71,7 +71,7 @@ const DEFAULT_NODES: EvidenceNodeUI[] = [
     label: "OS Sandbox Reproduction",
     type: "SANDBOX",
     status: "VERIFIED",
-    detail: "48/48 tests passed on patch",
+    detail: "100% tests passed on patch",
     source: "SANDBOX_RUNTIME",
     queryOrCommand: "npm test -- --concurrency-lock-suite",
     evidenceHash: "e5f67890123456789abcdef0123456789abcdef0123456789abcdef01234",
@@ -157,7 +157,7 @@ export const EvidenceGraphViewer: React.FC<EvidenceGraphViewerProps> = ({ nodes 
           <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> PostgreSQL lock evidence: 18 blocked queries, AccessExclusiveLock</div>
           <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Git commit identified: 049_add_orders_user_fk.sql</div>
           <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Physical Git bisect completed dynamically in sandbox</div>
-          <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> OS Sandbox reproduction: 48/48 regression tests passed (100% complete)</div>
+          <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> OS Sandbox reproduction: 100% regression tests passed (0 lock contention)</div>
           <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Cryptographic SHA-256 evidence hashes valid and untampered</div>
         </div>
       );

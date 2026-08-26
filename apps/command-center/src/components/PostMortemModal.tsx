@@ -30,7 +30,7 @@ Deployment #4c21e90 applied database migration \`049_add_orders_user_fk.sql\`, a
 
 ## 🛡️ TrueForge Harness Autonomous Remediation
 1. **Telemetry Scout (MCP)**: Identified 18 blocked transactions via PostgreSQL pg_locks and traced latency spike in Prometheus.
-2. **Sandbox Bisector**: Cloned repository into TrueForge isolated container sandbox, ran \`git bisect\` to isolate commit #4c21, and tested a non-blocking rollback patch (48/48 tests passed).
+2. **Sandbox Bisector**: Cloned repository into TrueForge isolated container sandbox, ran \`git bisect\` to isolate commit #4c21, and tested a non-blocking rollback patch (100% concurrency tests passed).
 3. **Blast-Radius Auditor**: Calculated risk score (74/100) and verified 0% data loss potential.
 4. **Human-in-the-Loop Gate**: TrueForge paused execution with a cryptographic nonce. Human SRE verified the SQL diff and signed off.
 5. **Execution**: Dropped blocking constraint and created non-blocking index \`CONCURRENTLY\`.

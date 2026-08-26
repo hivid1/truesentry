@@ -128,4 +128,27 @@ describe("TrueSentry Adversarial & Chaos Test Matrix", () => {
     const session = sessionStore.getSession("adv_session_g");
     expect(session?.status).toBe("FAILED");
   }, 40000);
+
+  it("Scenario H: Fail-Closed Invariant - Incomplete, malformed, or failing regression counts abort execution and NEVER trigger HITL", async () => {
+    const broadcaster = new EventBroadcaster();
+    const gate = new HitlGateEngine(broadcaster);
+    const sessionStore = new SessionStore();
+    const coordinator = new TrueSentryCoordinator(broadcaster, gate, sessionStore);
+
+    let approvalRequested = false;
+    broadcaster.subscribe("adv_session_h", (evt) => {
+      if (evt.type === "APPROVAL_REQUEST") {
+        approvalRequested = true;
+      }
+    });
+
+    // Force sandbox verification failure (0/10 tests passed)
+    await coordinator.runIncidentWorkflow("adv_session_h", SCENARIO_1_DB_LOCK, {
+      forceSandboxFailure: true,
+    });
+
+    expect(approvalRequested).toBe(false);
+    const session = sessionStore.getSession("adv_session_h");
+    expect(session?.status).toBe("FAILED");
+  }, 40000);
 });

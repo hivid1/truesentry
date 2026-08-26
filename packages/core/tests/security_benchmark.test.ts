@@ -39,7 +39,7 @@ describe("🏆 TrueSentry Internal Adversarial Safety Benchmark", () => {
       target: { system: "postgres", resource: "bench-db", actionType: "INDEX" },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       diff: { language: "sql", before: "", after: validSql },
-      sandboxProof: { sandboxId: "sbx_b", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_b", testsRun: 24, testsPassed: 24, lockDurationMeasuredMs: 50 },
     });
     const apprId = Array.from((hitl as any).pendingApprovals.keys())[0] as string;
     const token = hitl.resolveApproval(apprId, "APPROVE").token!;
@@ -73,7 +73,7 @@ describe("🏆 TrueSentry Internal Adversarial Safety Benchmark", () => {
       severity: "HIGH",
       target: { system: "postgres", resource: "bench-db", actionType: "INDEX" },
       diff: { language: "sql", before: "", after: validSql },
-      sandboxProof: { sandboxId: "sbx_b", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_b", testsRun: 24, testsPassed: 24, lockDurationMeasuredMs: 50 },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
     });
     const apprId2 = Array.from((hitl as any).pendingApprovals.keys())[0] as string;

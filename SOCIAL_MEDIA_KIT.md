@@ -30,7 +30,7 @@ How do you let an AI agent heal production outages without risking a catastrophi
 In TrueSentry, we built on @TrueFoundry's TrueForge harness to create a State-Gated HITL Safety Engine:
 
 1. Diagnostics happen autonomously in an isolated sandbox container.
-2. The agent reproduces the bug & validates a rollback patch with 48/48 tests.
+2. The agent reproduces the bug & validates a rollback patch with 100% regression tests passing.
 3. TrueForge HALTS execution before touching live production.
 4. An interactive Approval Card displays the exact SQL diff, blast radius, and risk score.
 

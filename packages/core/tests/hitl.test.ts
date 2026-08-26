@@ -31,8 +31,8 @@ describe("TrueForge Cryptographic HITL Safety Gate Tests", () => {
       },
       sandboxProof: {
         sandboxId: "sbx_test_1",
-        testsRun: 48,
-        testsPassed: 48,
+        testsRun: 12,
+        testsPassed: 12,
         lockDurationMeasuredMs: 0.14,
       },
     });
@@ -79,7 +79,7 @@ describe("TrueForge Cryptographic HITL Safety Gate Tests", () => {
       target: { system: "PostgreSQL", resource: "orders", actionType: "ROLLBACK" },
       blastRadius: { score: 50, category: "MEDIUM", affectedServices: [], estimatedRecoveryMinutes: 1, riskFactors: [], isDestructive: false, isIrreversible: true },
       diff: { before: "x", after: authorizedSql },
-      sandboxProof: { sandboxId: "s", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 0.1 },
+      sandboxProof: { sandboxId: "s", testsRun: 12, testsPassed: 12, lockDurationMeasuredMs: 0.1 },
     });
 
     const pendingId = [...(gate as any).pendingApprovals.keys()][0];

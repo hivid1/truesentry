@@ -75,7 +75,7 @@ DROP TABLE users CASCADE;`,
         severity: "CRITICAL",
         target: { system: "postgres", resource: "users-db", actionType: "INDEX" },
         diff: { language: "sql", before: "", after: safeSql },
-        sandboxProof: { sandboxId: "sbx_evil", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+        sandboxProof: { sandboxId: "sbx_evil", testsRun: 20, testsPassed: 20, lockDurationMeasuredMs: 50 },
         blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       });
 

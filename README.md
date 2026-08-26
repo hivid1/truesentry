@@ -140,7 +140,7 @@ npm run demo:record
 | Track | Target Prize | TrueSentry Implementation & Submission Asset |
 | :--- | :--- | :--- |
 | **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Harness integration: [`docs/TRUEFORGE_CAPABILITY_MATRIX.md`](docs/TRUEFORGE_CAPABILITY_MATRIX.md), `TrueForgeRuntimePanel`, 4 native MCP servers, subagent swarm, OS sandbox, durable session WAL, and cryptographic HITL. |
-| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](CODE_QUALITY.md) + Complete Qodo-audited PR history on GitHub (19+ Merged PRs) documented in [`QODO_REVIEW_EVIDENCE.md`](QODO_REVIEW_EVIDENCE.md). |
+| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](CODE_QUALITY.md) + Complete Qodo-audited PR history on GitHub — PRs #1–#21 documented in [`QODO_REVIEW_EVIDENCE.md`](QODO_REVIEW_EVIDENCE.md). |
 | **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, `AgentStateHeader` ("Now / Next / Waiting For"), clickable **Causal Evidence Graph**, and **Judge Red-Team Attack Lab**. |
 | **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
 | **Top Social Posts** | **Hackathon Swag & Community Showcase** | 5-post attack campaign and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](docs/SOCIAL_POST.md). |
