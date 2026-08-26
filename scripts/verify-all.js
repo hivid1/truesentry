@@ -1,11 +1,11 @@
 /**
- * TrueSentry Master Verification & Adversarial Test Runner
- * Validates all 8 hackathon readiness criteria in a single executable command.
+ * TrueSentry Master Verification & Adversarial Security Runner
+ * Validates all hackathon readiness, sandbox security, prompt injection, and cryptographic HITL criteria.
  */
 const { execSync } = require('child_process');
 
 console.log('\n==================================================================');
-console.log('🛡️  TRUESENTRY: MASTER 8-POINT ADVERSARIAL VERIFICATION RUNNER');
+console.log('🛡️  TRUESENTRY: MASTER 10-POINT ADVERSARIAL & SECURITY RUNNER');
 console.log('==================================================================\n');
 
 const tests = [
@@ -18,28 +18,36 @@ const tests = [
     cmd: 'npx vitest run packages/sandbox/tests/judge_test.test.ts',
   },
   {
-    name: '3. OS Process Sandbox & Timeout Enforcement',
-    cmd: 'npx vitest run packages/sandbox/tests/sandbox.test.ts',
+    name: '3. Sandbox Security: Command Injection, Symlink Escape, Network Isolation',
+    cmd: 'npx vitest run packages/sandbox/tests/sandbox_security.test.ts',
   },
   {
-    name: '4. Cryptographic HITL Gate, Tamper Defense & Replay Prevention',
-    cmd: 'npx vitest run packages/core/tests/hitl.test.ts',
+    name: '4. Cryptographic HITL Invariants: Field Mutations & Concurrent Replay',
+    cmd: 'npx vitest run packages/core/tests/hitl_adversarial.test.ts',
   },
   {
-    name: '5. Adversarial Chaos Matrix (Memory Leak, Failure Abort, Tampering)',
+    name: '5. Prompt Injection & Tool Poisoning Untrusted Data Invariants',
+    cmd: 'npx vitest run packages/core/tests/prompt_injection_defense.test.ts',
+  },
+  {
+    name: '6. Dynamic LLM Autonomy Matrix Across 5 Distinct Incidents',
+    cmd: 'npx vitest run packages/core/tests/dynamic_autonomy_matrix.test.ts',
+  },
+  {
+    name: '7. Adversarial Chaos Matrix (Memory Leak, Failure Abort, Tampering)',
     cmd: 'npx vitest run packages/core/tests/adversarial.test.ts',
   },
   {
-    name: '6. MCP Protocol Telemetry Servers (Prometheus, Postgres, GitHub, Slack)',
+    name: '8. MCP Protocol Telemetry Servers (Prometheus, Postgres, GitHub, Slack)',
     cmd: 'npx vitest run packages/mcp-servers/tests/mcp.test.ts',
   },
   {
-    name: '7. Full End-to-End Autonomous Incident Response Lifecycle',
+    name: '9. Full End-to-End Autonomous Incident Response Lifecycle',
     cmd: 'npx vitest run packages/core/tests/e2e.test.ts',
   },
   {
-    name: '8. Command Center UI Production Compilation',
-    cmd: 'npm run build --workspace=@truesentry/command-center',
+    name: '10. TrueSentry 100-Point Autonomous Incident Safety Benchmark',
+    cmd: 'npx vitest run packages/core/tests/security_benchmark.test.ts',
   },
 ];
 
