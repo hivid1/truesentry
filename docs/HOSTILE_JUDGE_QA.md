@@ -31,7 +31,7 @@ TrueSentry features a pluggable **Dual-Mode Adapter Architecture**:
 1. **Deterministic Simulation Mode (Default — Zero-Key Offline Mode)**:
    - For judging reproducibility, TrueSentry runs offline with zero external credentials, zero API rate limits, and 100% deterministic test passes.
    - Evaluates PromQL metrics, PostgreSQL table locks, Git commit checkouts, and Slack webhook payloads deterministically.
-2. **Live Network Mode (Production Ready)**:
+2. **Live Network Mode (Optional Real Integrations / Environment-Dependent)**:
    - When environment variables are provided (`PROMETHEUS_URL`, `DATABASE_URL`, `GITHUB_TOKEN`, `SLACK_WEBHOOK_URL`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OLLAMA_BASE_URL`), the MCP servers issue live HTTP requests, query real PostgreSQL databases, and dispatch live Slack webhooks.
 - **Test Verification**: `npx vitest run packages/mcp-servers/tests/mcp.test.ts`
 

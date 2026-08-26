@@ -95,7 +95,7 @@ graph TD
 1. **`TelemetryScoutSubagent`**: Invokes the **Prometheus MCP** server (`get_firing_alerts`) and **Postgres MCP** server (`inspect_table_locks`).
 2. **`SandboxBisectorSubagent`**: Spawns an isolated TrueForge OS process sandbox, mounting the physical repository clone.
 3. **Physical `git bisect`**: Automatically executes `git bisect start HEAD good_sha` on disk, running the concurrency test suite against each commit to identify the exact regression commit: `049_add_orders_user_fk.sql`.
-4. **Self-Correction & Sandbox Verification**: Compiles a candidate patch (`CREATE INDEX CONCURRENTLY idx_orders_user_id ON orders(user_id);`) and executes the 48-test concurrency suite inside the sandbox. **100% of tests must pass.**
+4. **Self-Correction & Sandbox Verification**: Compiles a candidate patch (`CREATE INDEX CONCURRENTLY idx_orders_user_id ON orders(user_id);`) and executes the concurrency test suite inside the sandbox. **100% of tests must pass.**
 
 ---
 
@@ -116,7 +116,7 @@ To prove our execution boundaries, we subjected TrueSentry to live red-team prob
 - **Result**: Utilizing filesystem Compare-And-Swap (`fs.openSync` with `O_CREAT | O_EXCL`), Worker #1 acquired the lock, while Workers #2–50 were rejected with `ReplayAttackException`.
 
 ### Attack 4: Failing Candidate Patch (Safe-Abort)
-- **Payload**: Candidate patch failed sandbox concurrency tests ($0/48$ passed).
+- **Payload**: Candidate patch failed sandbox concurrency tests (0 passed / suite regression).
 - **Result**: Execution safely aborted with **0 HITL requests emitted and 0 production changes**.
 
 ---
@@ -162,7 +162,7 @@ The hackathon guidelines explicitly ask: *"What broke along the way?"* Here are 
 
 ## 10. What We Deliberately Do (and Do Not) Claim
 
-- **We DO claim**: TrueSentry passes **13/13 automated verification suites** and scores **100/100 on its internally defined 7-vector adversarial safety benchmark**.
+- **We DO claim**: TrueSentry passes **15/15 automated verification suites** and scores **100/100 on its internally defined 7-vector adversarial safety benchmark**.
 - **We DO NOT claim**: "Universal 100% security" or that an LLM cannot be cognitively manipulated.
 - **Our Guarantee**: Even if the LLM's context is completely poisoned, **malicious investigation data cannot cross the authorization boundary into unverified execution**.
 

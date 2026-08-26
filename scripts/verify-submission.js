@@ -129,12 +129,52 @@ runCheck('8. Qodo AI Configuration & Repository Review Rules', () => {
   }
 });
 
+// 9. Source Code Scan for Prohibited Hardcoded Fallbacks & Magic Test Literals
+runCheck('9. Dynamic Regression Integrity Guard (Zero Hardcoded Test Count Fallbacks)', () => {
+  const targetDirs = [
+    path.resolve(process.cwd(), 'packages/core/src'),
+    path.resolve(process.cwd(), 'packages/sandbox/src'),
+    path.resolve(process.cwd(), 'packages/mcp-servers/src'),
+  ];
+
+  const prohibitedPatterns = [
+    /\|\|\s*48\b/,
+    /\?\?\s*48\b/,
+    /totalTests\s*=\s*48\b/,
+    /testsPassed\s*=\s*48\b/,
+    /testsRun\s*=\s*48\b/,
+    /["'`]48\/48["'`]/,
+  ];
+
+  function scanDir(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') || entry.name.endsWith('.js'))) {
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        for (const pattern of prohibitedPatterns) {
+          if (pattern.test(content)) {
+            throw new Error(`Prohibited hardcoded test count fallback matching ${pattern} found in ${path.relative(process.cwd(), fullPath)}`);
+          }
+        }
+      }
+    }
+  }
+
+  for (const d of targetDirs) {
+    scanDir(d);
+  }
+});
+
 console.log('\n==================================================================');
 console.log('🎉 SUBMISSION PREFLIGHT COMPLETE: 100% READY FOR HACKATHON JUDGING!');
 console.log('==================================================================');
 console.log('Summary of Verified Tracks:');
-console.log('  • 🥇 Double-O Track (Best Use of TrueForge): 7/7 Primitives Verified (Dual-Mode MCP + Models + Sessions)');
-console.log('  • 🥈 Q Branch Track (Best Code Quality): Complete Qodo-Audited PR History (20 Merged PRs)');
+console.log('  • 🥇 Double-O Track (Best Use of TrueForge): 7/7 Primitives Verified (Dual-Mode MCP + Multi-Model + Durable Sessions)');
+console.log('  • 🥈 Q Branch Track (Best Code Quality): Complete Qodo-Audited PR History (PRs #1–#21)');
 console.log('  • 🥈 Savile Row Track (Best UI): State-Driven Command Center & Attack Lab Verified');
 console.log('  • 📝 Field Report (Best Blog): 16-Section Technical Case Study Ready');
 console.log('  • 📱 Top Social Posts: 5-Post Adversarial Campaign Formatted & Tagged');

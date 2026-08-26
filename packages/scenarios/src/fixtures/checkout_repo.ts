@@ -58,7 +58,7 @@ if (fs.existsSync(migrationPath)) {
     }
   }
 }
-console.log('PASS: 48/48 concurrency lock tests passed (0ms lock contention).');
+console.log('PASS: 12/12 concurrency lock test vectors passed (0ms lock contention).');
 process.exit(0);
 `;
 

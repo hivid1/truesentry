@@ -152,7 +152,7 @@ export const AttackLab: React.FC = () => {
             </div>
             <div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-[11px] text-zinc-400">
               <span className="text-zinc-500 block text-[9px]">SANDBOX TEST EXECUTION:</span>
-              <span>Candidate patch executed in isolated OS sandbox: <code className="text-red-400">0 / 48 Tests Passed</code></span>
+              <span>Candidate patch executed in isolated OS sandbox: <code className="text-red-400">0 / 10 Tests Passed (Verification Failed)</code></span>
             </div>
 
             {executed && (

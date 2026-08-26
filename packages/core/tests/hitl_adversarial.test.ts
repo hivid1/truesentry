@@ -28,8 +28,8 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
       },
       sandboxProof: {
         sandboxId: "sbx_proof_123",
-        testsRun: 48,
-        testsPassed: 48,
+        testsRun: 16,
+        testsPassed: 16,
         lockDurationMeasuredMs: 120,
       },
     });
@@ -93,7 +93,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
       target: { system: "postgres", resource: "items-db", actionType: "APPLY_INDEX" },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       diff: { language: "sql", before: "", after: sql },
-      sandboxProof: { sandboxId: "sbx_1", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_1", testsRun: 16, testsPassed: 16, lockDurationMeasuredMs: 50 },
     });
     const id1 = Array.from((hitl as any).pendingApprovals.keys())[0] as string;
     const tokenAlpha = hitl.resolveApproval(id1, "APPROVE").token!;
@@ -118,7 +118,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
       target: { system: "postgres", resource: "test-db", actionType: "INDEX" },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       diff: { language: "sql", before: "", after: sql },
-      sandboxProof: { sandboxId: "sbx_race", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_race", testsRun: 16, testsPassed: 16, lockDurationMeasuredMs: 50 },
     });
     const id = Array.from((hitl as any).pendingApprovals.keys())[0] as string;
     const token = hitl.resolveApproval(id, "APPROVE").token!;
@@ -155,7 +155,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
       target: { system: "postgres", resource: "items-db", actionType: "APPLY_INDEX" },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       diff: { language: "sql", before: "", after: sql },
-      sandboxProof: { sandboxId: "sbx_cp", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_cp", testsRun: 16, testsPassed: 16, lockDurationMeasuredMs: 50 },
     });
     const id = Array.from((engineA as any).pendingApprovals.keys())[0] as string;
     const token = engineA.resolveApproval(id, "APPROVE").token!;
@@ -180,7 +180,7 @@ describe("🔐 Cryptographic HITL Gate Adversarial & Invariant Tests", () => {
       target: { system: "postgres", resource: "test-db", actionType: "INDEX" },
       blastRadius: { riskScore: 1, estimatedDowntimeSeconds: 0, affectedServices: [], dataLossRisk: false },
       diff: { language: "sql", before: "", after: sql },
-      sandboxProof: { sandboxId: "sbx_exp", testsRun: 48, testsPassed: 48, lockDurationMeasuredMs: 50 },
+      sandboxProof: { sandboxId: "sbx_exp", testsRun: 16, testsPassed: 16, lockDurationMeasuredMs: 50 },
     });
     const id = Array.from((hitl as any).pendingApprovals.keys())[0] as string;
     const token = hitl.resolveApproval(id, "APPROVE").token!;

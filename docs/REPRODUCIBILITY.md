@@ -67,7 +67,7 @@ npx vitest run packages/core/tests/adversarial.test.ts
 | :--- | :--- | :--- |
 | **SQL Tampering** | Changing approved SQL to `DROP TABLE orders CASCADE;` | Throws `CryptographicIntegrityError`, aborts instantly. |
 | **Approval Replay** | Attempting to reuse an authorization token twice | Throws `Replay attack detected`. |
-| **Sandbox Failure** | Remediation tests fail in sandbox ($0/48$ pass) | Agent halts with `SANDBOX_VERIFICATION_FAILED`, never requests human approval. |
+| **Sandbox Failure** | Remediation tests fail in sandbox (0 passed / regression) | Agent halts with `SANDBOX_VERIFICATION_FAILED`, never requests human approval. |
 | **Non-DB Incident** | API Gateway Memory Leak alert (0 DB locks) | Dynamically skips DB lock investigation, triages pod metrics. |
 | **Human Rejection** | SRE clicks "Reject" on approval card | Halts cleanly, marks session `FAILED`, leaves database untouched. |
 

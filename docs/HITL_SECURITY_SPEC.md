@@ -79,7 +79,7 @@ TrueSentry structures all investigation facts into a directional Causal Evidence
              [ Git Bisect: Physical Repo ]
                            │ (reproduced_in)
                            ▼
-          [ OS Sandbox: 48/48 Tests Passed ]
+          [ OS Sandbox: 100% Tests Passed ]
                            │ (confirms)
                            ▼
               [ 🎯 ROOT CAUSE CONFIRMED ]

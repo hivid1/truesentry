@@ -60,7 +60,7 @@ const mode = process.env.PROMETHEUS_URL ? "live_network" : "deterministic_fixtur
 
 - **Deterministic Simulation Mode (Zero-Dependency Offline Mode)**:
   Guarantees 100% reproducible execution for judges without requiring external API tokens, database instances, or running Prometheus servers.
-- **Live Network Mode (Production Ready)**:
+- **Live Network Mode (Optional Real Integrations / Environment-Dependent)**:
   When environment variables (`PROMETHEUS_URL`, `DATABASE_URL`, `GITHUB_TOKEN`, `SLACK_WEBHOOK_URL`) are provided, TrueSentry issues live HTTP REST calls, executes real PostgreSQL queries, and posts real Slack webhooks.
 
 ---

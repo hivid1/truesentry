@@ -30,13 +30,29 @@ export class SelfCorrectionEngine {
       // Genuinely execute the test command in the isolated OS subprocess
       const res = await sandbox.exec(testCommand);
 
-      const countMatch = (res.stdout + res.stderr).match(/(\d+)\/(\d+)/) || (res.stdout + res.stderr).match(/(\d+)\s+passed/i);
-      const totalCount = countMatch ? parseInt(countMatch[2] || countMatch[1], 10) : 48;
-      const passedCount = countMatch ? parseInt(countMatch[1], 10) : (res.exitCode === 0 ? totalCount : 0);
+      // Dynamically extract test counts from subprocess execution output
+      const ratioMatch = (res.stdout + res.stderr).match(/(\d+)\s*\/\s*(\d+)/);
+      const passedOnlyMatch = (res.stdout + res.stderr).match(/(\d+)\s+passed/i);
+      const totalTestsMatch = (res.stdout + res.stderr).match(/total\s*(?:tests)?:?\s*(\d+)/i);
+
+      let totalCount = 0;
+      let passedCount = 0;
+
+      if (ratioMatch) {
+        passedCount = parseInt(ratioMatch[1], 10);
+        totalCount = parseInt(ratioMatch[2], 10);
+      } else if (passedOnlyMatch) {
+        passedCount = parseInt(passedOnlyMatch[1], 10);
+        totalCount = totalTestsMatch ? parseInt(totalTestsMatch[1], 10) : (res.exitCode === 0 ? passedCount : Math.max(passedCount, 1));
+      } else {
+        totalCount = 1;
+        passedCount = res.exitCode === 0 ? 1 : 0;
+      }
 
       state.totalTests = totalCount;
+      state.testsPassed = passedCount;
 
-      if (res.exitCode === 0) {
+      if (res.exitCode === 0 && passedCount === totalCount && totalCount > 0) {
         state.history.push({
           attemptedPatch: currentPatch,
           passed: true,

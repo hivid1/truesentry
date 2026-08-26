@@ -16,7 +16,7 @@
 2. **P1: Real Physical Git Repository & Automated Bisect (`packages/scenarios`, `packages/sandbox`)**:
    - Created programmatic physical Git repository fixture (`packages/scenarios/src/fixtures/checkout_repo.ts`) with 5 genuine commits.
    - `GitBisectRunner` (`packages/sandbox/src/bisect.ts`) genuinely runs `git bisect start/bad/good/run` on the physical repository, dynamically discovering the bad commit SHA without hardcoded shortcuts.
-   - `SelfCorrectionEngine` (`packages/sandbox/src/selfCorrection.ts`) tests the SQL patch in the isolated sandbox and verifies that 48/48 concurrency tests pass.
+   - `SelfCorrectionEngine` (`packages/sandbox/src/selfCorrection.ts`) tests the SQL patch in the isolated sandbox and dynamically verifies that all concurrency tests pass.
 
 3. **P4: Cryptographic Payload-Bound HITL Gate & Tamper Defense (`packages/core`, `packages/mcp-servers`)**:
    - `HitlGateEngine` computes SHA-256 digest of `(sessionId + incidentId + actionType + target + sql + sandboxProofHash)`.

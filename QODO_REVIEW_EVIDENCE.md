@@ -29,6 +29,7 @@
 | **[PR #18](https://github.com/hivid1/truesentry/pull/18)** | `packages/mcp-servers`, `packages/core` | Flagged simulation hardcoding in MCP servers and ephemeral in-memory session loss on process restarts. | Implemented Dual-Mode Live/Deterministic MCP adapters, live multi-model execution, durable WAL `SessionStore`, and dynamic `RegressionSuiteResult`. | **Merged** ✅ |
 | **[PR #19](https://github.com/hivid1/truesentry/pull/19)** | `apps/command-center`, `scripts/`, `docs/` | Recommended crystal-clear state visibility in UI (NOW/NEXT/WAITING), TrueForge mapping table, and polished 6-act live recording teleprompter. | Updated `AgentStateHeader`, `TrueForgeRuntimePanel`, `README.md`, and `scripts/record-demo.js`. | **Merged** ✅ |
 | **[PR #20](https://github.com/hivid1/truesentry/pull/20)** | `README.md`, `docs/`, `scripts/` | Recommended removing stale claims, streamlining top-level README for 20-second judge scans, and grounding demo narration. | Streamlined README, synchronized benchmark timings, and aligned demo teleprompter script. | **Merged** ✅ |
+| **[PR #21](https://github.com/hivid1/truesentry/pull/21)** | `packages/core`, `packages/sandbox`, `scripts/` | Recommended complete fail-closed dynamic regression invariant, eliminating all `48` fallbacks, implementing live Anthropic connector, and adding Check 9 source scanner. | Removed `|| 48` fallback, enforced fail-closed validation, implemented live Anthropic API router, and added source scanner to `verify-submission.js`. | **Merged** ✅ |
 
 ---
 
