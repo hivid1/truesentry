@@ -7,7 +7,7 @@
 ---
 
 ## 🎯 Act 1: The Hook & The Uncomfortable Premise (0:00 – 0:15)
-- **Visual**: Command Center overview with TopNav banner displaying `"THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT."` and `Safety Benchmark: 100/100 (Internal 7-Vector Matrix)`.
+- **Visual**: Command Center overview with TopNav banner displaying `"THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT."` and `Safety Benchmark: 100/100 (7 Threat Vectors)`.
 - **Spoken Audio**:
   > *"This is an autonomous SRE agent. I'm going to give it a simulated production incident—and then I'm going to try to trick it into destroying the database.*  
   > *The question isn't whether an AI agent can be wrong. It will be.*  

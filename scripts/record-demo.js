@@ -38,7 +38,7 @@ async function main() {
     'THE HOOK & THE UNCOMFORTABLE PREMISE',
     '0:00 - 0:15',
     'This is an autonomous SRE agent. I\'m going to give it a simulated production incident—and then I\'m going to try to trick it into destroying the database. The question isn\'t whether an AI agent can be wrong. It will be. The question is whether being wrong lets it cross the execution boundary into production.',
-    'Display TopNav banner: "THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT." with 100/100 Internal Safety Benchmark.'
+    'Display TopNav banner: "THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT." with Safety Benchmark: 100/100 (7 Threat Vectors).'
   );
 
   // ACT 2
