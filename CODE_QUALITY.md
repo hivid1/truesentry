@@ -84,7 +84,7 @@ truesentry/
 
 ## 4. Test Coverage & Adversarial Benchmark Matrix
 
-TrueSentry maintains **12 automated test suites (100% Passing)**:
+TrueSentry maintains **13 automated test suites (100% Passing)**:
 
 | Suite # | Test File | Key Invariant / Property Verified |
 | :--- | :--- | :--- |
@@ -100,3 +100,4 @@ TrueSentry maintains **12 automated test suites (100% Passing)**:
 | **10** | `packages/mcp-servers/tests/mcp.test.ts` | MCP server schemas and PromQL/Postgres tool responses |
 | **11** | `packages/core/tests/e2e.test.ts` | Full lifecycle: Alert $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Recovery |
 | **12** | `packages/core/tests/security_benchmark.test.ts` | 100-Point Internal Adversarial Safety Benchmark (7 Threat Vectors) |
+| **13** | `packages/core/tests/trueforge_capabilities.test.ts` | TrueForge Core: Subagents, Sessions, Reconnect Replay, Models |

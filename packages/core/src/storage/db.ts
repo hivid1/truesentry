@@ -34,4 +34,12 @@ export class SessionStore {
       session.updatedAt = Date.now();
     }
   }
+
+  public setModel(id: string, model: string): void {
+    const session = this.sessions.get(id);
+    if (session) {
+      session.model = model;
+      session.updatedAt = Date.now();
+    }
+  }
 }
