@@ -16,6 +16,8 @@ export interface ParsedErrorTrace {
 export interface SelfCorrectionState {
   iteration: number;
   maxIterations: number;
+  success: boolean;
+  testsPassed: number;
   history: Array<{
     attemptedPatch: string;
     error?: ParsedErrorTrace;
