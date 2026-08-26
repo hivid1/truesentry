@@ -11,14 +11,14 @@
 ## 🎯 The High-Stakes Problem
 When high-severity production alerts trigger at 2:00 AM (e.g. checkout HTTP 500 error spikes):
 - Traditional human on-call engineers take **30 to 60 minutes** to wake up, parse logs, isolate commits, and deploy fixes.
-- Unconstrained AI agents are too risky: an unverified rollback or hallucinated SQL command could lock tables further or wipe out live customer records.
+- Unconstrained AI agents are too risky: an unverified rollback or hallucinated SQL command could lock tables further or corrupt live customer data.
 
 ## 🛡️ The TrueSentry Architecture
 **TrueSentry** combines dynamic LLM tool-calling with the **TrueForge Agent Harness** to provide safe, automated incident investigation:
 
-1. **Model Context Protocol (MCP) Telemetry**: Queries Prometheus error-rate metrics, PostgreSQL lock telemetry (`pg_locks`), and GitHub deployment logs.
-2. **Real Isolated Sandbox & Git Bisect**: Spins up an OS-level isolated sandbox directory, executes real child processes with timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
-3. **Iterative Self-Correction Loop**: Executes tests inside the sandbox against proposed SQL patches, refining blocking DDL into non-blocking concurrent statements until all unit/concurrency tests pass.
+1. **Model Context Protocol (MCP) Telemetry**: Interacts with Prometheus error-rate metrics, PostgreSQL lock telemetry (`pg_locks`), and GitHub deployment history via standard Model Context Protocol (MCP) tools.
+2. **Real Isolated Sandbox & Git Bisect**: Creates an isolated OS-process sandbox directory (`packages/sandbox/src/runtime.ts`), executes child processes with execution timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
+3. **Iterative Self-Correction Loop**: Executes unit and concurrency regression suites inside the isolated sandbox process, refining blocking DDL into non-blocking concurrent statements until all test assertions pass.
 4. **Cryptographically Bound HITL Safety Gate**: TrueForge halts execution before state-modifying actions. The system computes a **SHA-256 payload digest** over `(sessionId + incidentId + actionType + sql + sandboxProof)` and issues a single-use token upon human approval. Any SQL tampering or replay attempt is rejected.
 5. **Multi-Agent Workflow**: Delegates specialized tasks across dedicated workers (*Telemetry Scout*, *Sandbox Bisector*, *Blast-Radius Auditor*, and *Post-Mortem Scribe*).
 
@@ -35,7 +35,7 @@ graph TD
     subgraph "Phase 2: Real Sandbox Bisect & Verification"
         HARNESS --> SANDBOX[Isolated OS Process Sandbox]
         SANDBOX --> BISECT[Real Git Bisect: Discovers Faulty Migration Commit]
-        SANDBOX --> TEST[Self-Correction Loop: Test Concurrent Patch in Sandbox]
+        SANDBOX --> TEST[Self-Correction Loop: Test Concurrent Patch in Sandbox Process]
     end
     
     subgraph "Phase 3: Cryptographic Human-in-the-Loop Gate"
@@ -46,7 +46,7 @@ graph TD
     
     subgraph "Phase 4: Verified Execution & Recovery"
         SRE --> EXEC[Execute Verified SQL via Postgres MCP Server]
-        EXEC --> VERIFY[Prometheus Verification: Error Rate Normalizes to 0.00%]
+        EXEC --> VERIFY[Prometheus Verification: Queries Post-Remediation Recovery]
         VERIFY --> POSTMORTEM[Publish Post-Mortem Dossier with Merkle Audit Tree]
     end
 ```
@@ -58,7 +58,7 @@ graph TD
 ### Prerequisites
 - Node.js >= 20.x
 
-### Run the Demo (One Command)
+### Run the Master Verification (All 8 Criteria)
 ```bash
 # Clone using GitHub CLI:
 gh repo clone hivid1/truesentry
@@ -66,15 +66,20 @@ gh repo clone hivid1/truesentry
 # Or clone via HTTPS:
 git clone https://github.com/hivid1/truesentry.git
 
-# Install, build, and start the system:
+# Install, build, and verify all 8 criteria in one command:
 cd truesentry
 npm install
 npm run build
+npm run verify
+```
+
+### Run the Interactive Demo
+```bash
 npm run demo
 ```
 Open **http://localhost:3000** to access the SRE Operations Command Center.
 
-### Run the Full Automated Test Suite
+### Run the Automated Test Suite
 ```bash
 npm test
 ```
@@ -86,7 +91,7 @@ npm test
 ```
 truesentry/
 ├── apps/
-│   └── command-center/       # Next.js 14 App Router Operations Dashboard
+│   └── command-center/       # Next.js 14 App Router Operations Dashboard (Savile Row Track)
 │
 ├── packages/
 │   ├── cli/                  # Terminal CLI Incident Responder (`truesentry`)
@@ -95,7 +100,7 @@ truesentry/
 │   ├── sandbox/              # Isolated OS Process Sandbox Runtime & Dynamic Git Bisector
 │   └── scenarios/            # Scenario Benchmarks & Physical Git Fixture Generators
 │
-├── .qodo/config.yaml         # Qodo AI Code Quality Configuration
+├── .qodo/config.yaml         # Qodo AI Code Quality Configuration (Q Branch Track)
 ├── .qodo.toml                # Qodo Workspace Rules
 └── .github/workflows/ci.yml  # Automated CI Pipeline (Build, Typecheck, Test)
 ```
