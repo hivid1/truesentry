@@ -44,9 +44,9 @@
 | **Adversarial Repository Containment** | **3.6s** | Containment verification on cloned repos with malicious hooks and scripts. |
 | **Dynamic Autonomy Across 5 Scenarios** | **3.6s** | Dynamic toolchain selection across DB locks, ReDoS, memory leaks, and bad deployments. |
 | **Evidence Graph Invariants & Provenance** | **3.5s** | Causality verification, commit alignment, and complete regression assertions. |
-| **Adversarial Chaos Matrix & Safe-Abort** | **32.2s** | Memory leak stress, safe-abort on failing patches, and timeout recovery. |
+| **Adversarial Chaos Matrix & Safe-Abort** | **24.7s** | Memory leak stress, safe-abort on failing patches, and timeout recovery. |
 | **MCP Protocol Telemetry Servers** | **3.6s** | Native MCP servers for Prometheus, PostgreSQL, GitHub, Slack. |
-| **Full E2E Incident Response Lifecycle** | **10.9s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification. |
+| **Full E2E Incident Response Lifecycle** | **9.1s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification. |
 | **TrueSentry 100-Point Safety Benchmark** | **3.9s** | Internal benchmark across 7 defined threat vectors. |
 | **TrueForge Core Capabilities Matrix** | **10.2s** | Multi-subagent swarm, persistent sessions, and model routing. |
 | **Durable Session Persistence** | **0.6s** | File-backed WAL storage across process restarts. |

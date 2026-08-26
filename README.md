@@ -5,21 +5,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TrueForge: 0.1.4](https://img.shields.io/badge/TrueForge-0.1.4-cyan.svg)](https://github.com/truefoundry/trueforge)
 [![Qodo: Audited](https://img.shields.io/badge/Qodo-PR%20Audited-green.svg)](https://www.qodo.ai)
+[![Suites: 15/15 Passed](https://img.shields.io/badge/Verification-15%2F15%20Green-emerald.svg)](scripts/verify-all.js)
+
+[🚀 60-Sec Quickstart](#-quickstart-zero-config-setup) • [🎬 3-Min Demo Script](docs/DEMO_SCRIPT.md) • [⚙️ TrueForge Primitives](#️-trueforge-primitives-how-judges-can-observe-the-harness) • [🛡️ Honesty Framework](#️-four-tier-truthfulness--honesty-framework) • [🔍 Qodo PR Trail](QODO_REVIEW_EVIDENCE.md) • [📝 Blog Case Study](docs/BLOG_POST.md)
 
 ---
 
-## 🎯 The Core Architectural Thesis
+## ⚡ 30-Second Executive Summary
 
+**TrueSentry** is an autonomous SRE incident responder built on the **TrueForge Agent Harness**. When production alerts fire, TrueSentry coordinates specialized subagents to query telemetry over **Model Context Protocol (MCP)**, mount physical Git repositories to isolate faulty commits via **automated git bisect**, and synthesize non-blocking patches in an **isolated OS process sandbox**.
+
+Most importantly, TrueSentry introduces a zero-trust execution boundary:
 ```
 # THE AGENT CAN BE WRONG.
 # THE EXECUTION BOUNDARY CANNOT.
 ```
-
-> **"TrueSentry doesn't assume the AI agent is trustworthy. It makes the execution boundary trustworthy.**
-> 
-> **So let's deliberately give the agent malicious information and see what happens."**
-> 
-> *Key Invariant: Untrusted investigation data cannot directly cross the authorization boundary into execution. A failed investigation cannot escalate into an authorized action.*
+> **"TrueSentry doesn't assume the AI agent is trustworthy. It makes the execution boundary trustworthy.**  
+> **Untrusted investigation data cannot directly cross the authorization boundary into execution. A failed investigation cannot escalate into an authorized action."**
 
 ---
 
@@ -27,11 +29,12 @@
 
 TrueSentry features a pluggable **Dual-Mode Adapter Architecture**:
 
-1. **Deterministic Simulation Mode (Default — Zero Config)**:
-   - Evaluates offline with zero external credentials, zero API rate limits, and 100% reproducible execution for judges.
+1. **Deterministic Simulation Mode (Default — Zero-Config Judging)**:
+   - Evaluates offline with zero external credentials, zero API rate limits, and 100% reproducible execution for hackathon judges.
    - Evaluates PromQL metrics, PostgreSQL table locks, Git commit checkouts, and Slack webhook payloads deterministically.
-2. **Live Network Mode (Production Ready)**:
+2. **Live Network Mode (Optional Real Integrations / Environment-Dependent)**:
    - When credentials or endpoints are set in the environment (`PROMETHEUS_URL`, `DATABASE_URL`, `GITHUB_TOKEN`, `SLACK_WEBHOOK_URL`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OLLAMA_BASE_URL`), TrueSentry automatically switches to live HTTP/REST queries and real database executions.
+
 ---
 
 ## ⚙️ TrueForge Primitives: How Judges Can Observe the Harness
@@ -89,11 +92,59 @@ graph TD
 | Category | Precise Definition | Verification Reference |
 | :--- | :--- | :--- |
 | **1. Proven by Tests** | Deterministically validated across 15 automated verification suites (100% passing in CI). | `npm run verify` (`scripts/verify-all.js`) |
-| **2. Architectural Invariants** | Structural properties guaranteed by the harness pipeline regardless of LLM reasoning (*"Untrusted investigation data cannot cross the authorization boundary"*). | [`packages/core/src/hitl/graph_validator.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/graph_validator.ts) |
-| **3. Environment-Dependent** | Process-level environment proxy blackholing on bare OS hosts (`HTTP_PROXY=http://127.0.0.1:0`); full kernel network namespace isolation (`--network none`) when running in container runtimes. | [`docs/LIMITATIONS_AND_BOUNDARIES.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/LIMITATIONS_AND_BOUNDARIES.md) |
-| **4. Not Claimed** | We do **not** claim that an LLM itself cannot be cognitively manipulated by prompt injection. We prove that cognitive manipulation cannot breach the downstream policy and cryptographic execution gates. | [`packages/core/tests/evil_repository.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/evil_repository.test.ts) |
+| **2. Architectural Invariants** | Structural properties guaranteed by the harness pipeline regardless of LLM reasoning (*"Untrusted investigation data cannot cross the authorization boundary"*). | [`packages/core/src/hitl/graph_validator.ts`](packages/core/src/hitl/graph_validator.ts) |
+| **3. Environment-Dependent** | Process-level environment proxy blackholing on bare OS hosts (`HTTP_PROXY=http://127.0.0.1:0`); full kernel network namespace isolation (`--network none`) when running in container runtimes. | [`docs/LIMITATIONS_AND_BOUNDARIES.md`](docs/LIMITATIONS_AND_BOUNDARIES.md) |
+| **4. Not Claimed** | We do **not** claim that an LLM itself cannot be cognitively manipulated by prompt injection. We prove that cognitive manipulation cannot breach the downstream policy and cryptographic execution gates. | [`packages/core/tests/evil_repository.test.ts`](packages/core/tests/evil_repository.test.ts) |
 
 > **Important Boundary Clarification**: TrueSentry passes **15/15 automated verification suites** and scores **100/100 on its internally defined 7-vector adversarial safety benchmark**.
+
+---
+
+## 🚀 Quickstart (Zero-Config Setup)
+
+### Prerequisites
+- Node.js >= 20.x
+
+### 1. Run the Full Submission Preflight Auditor
+```bash
+npm run verify:submission
+```
+
+### 2. Run the 15-Point Automated Verification Suite
+```bash
+# Clone the repository:
+git clone https://github.com/hivid1/truesentry.git
+cd truesentry
+
+# Install, build, and verify all 15 suites in one command:
+npm install
+npm run build
+npm run verify
+```
+
+### 3. Run the Interactive SRE Operations Command Center
+```bash
+npm run demo
+```
+Open **http://localhost:3000** to access the real-time SRE dashboard, inspect the Causal Evidence Graph, and test the **Judge Red-Team Attack Lab**.
+
+### 4. Run the 3-Minute Demo Teleprompter Runner
+```bash
+npm run demo:record
+```
+
+---
+
+## 🏆 Hackathon Track Alignment & Submission Assets
+
+| Track | Target Prize | TrueSentry Implementation & Submission Asset |
+| :--- | :--- | :--- |
+| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Harness integration: [`docs/TRUEFORGE_CAPABILITY_MATRIX.md`](docs/TRUEFORGE_CAPABILITY_MATRIX.md), `TrueForgeRuntimePanel`, 4 native MCP servers, subagent swarm, OS sandbox, durable session WAL, and cryptographic HITL. |
+| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](CODE_QUALITY.md) + Complete Qodo-audited PR history on GitHub (19+ Merged PRs) documented in [`QODO_REVIEW_EVIDENCE.md`](QODO_REVIEW_EVIDENCE.md). |
+| **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, `AgentStateHeader` ("Now / Next / Waiting For"), clickable **Causal Evidence Graph**, and **Judge Red-Team Attack Lab**. |
+| **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
+| **Top Social Posts** | **Hackathon Swag & Community Showcase** | 5-post attack campaign and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](docs/SOCIAL_POST.md). |
+| **Judge Defense & Scorecard** | **Hostile Q&A & Category Audit** | Technical defense in [`docs/HOSTILE_JUDGE_QA.md`](docs/HOSTILE_JUDGE_QA.md) + Full rubric audit in [`docs/SCORECARD_AND_PRIZE_AUDIT.md`](docs/SCORECARD_AND_PRIZE_AUDIT.md). |
 
 ---
 
@@ -109,61 +160,13 @@ graph TD
 | **Adversarial Repository Containment** | **3.6s** | Containment verification on cloned repos with malicious hooks |
 | **Dynamic Autonomy Across 5 Incidents** | **3.6s** | Dynamic toolchain selection across DB locks, ReDoS, memory leaks |
 | **Evidence Graph Invariants & Provenance** | **3.5s** | Causality verification, commit alignment, and complete regression assertions |
-| **Adversarial Chaos & Safe-Abort** | **32.2s** | Memory leak stress, safe-abort on failing patches, and timeout recovery |
+| **Adversarial Chaos & Safe-Abort** | **24.7s** | Memory leak stress, safe-abort on failing patches, and timeout recovery |
 | **MCP Protocol Telemetry Servers** | **3.6s** | Native MCP servers for Prometheus, PostgreSQL, GitHub, Slack |
-| **Full E2E Incident Response Lifecycle** | **10.9s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification |
+| **Full E2E Incident Response Lifecycle** | **9.1s** | Complete triage: Alert $\to$ MCP queries $\to$ Bisect $\to$ Sandbox $\to$ HITL $\to$ Execution $\to$ Verification |
 | **TrueSentry 100-Point Safety Benchmark** | **3.9s** | Internal benchmark across 7 defined threat vectors |
 | **TrueForge Core Capabilities Matrix** | **10.2s** | Multi-subagent swarm, persistent sessions, and model routing |
 | **Durable Session Persistence** | **0.6s** | File-backed WAL storage across process restarts |
 | **SSE Reconnect & History Backfill** | **0.6s** | EventBroadcaster historical replay upon client reconnection |
-
----
-
-## 🚀 Quickstart (Zero-Config Setup)
-
-### Prerequisites
-- Node.js >= 20.x
-
-### Run the Full Hackathon Submission Preflight Auditor
-```bash
-npm run verify:submission
-```
-
-### Run the Master Verification (All 15 Criteria)
-```bash
-# Clone the repository:
-git clone https://github.com/hivid1/truesentry.git
-cd truesentry
-
-# Install, build, and verify all 15 criteria in one command:
-npm install
-npm run build
-npm run verify
-```
-
-### Run the 3-Minute Demo Teleprompter Runner
-```bash
-npm run demo:record
-```
-
-### Run the Interactive SRE Operations Command Center
-```bash
-npm run demo
-```
-Open **http://localhost:3000** to access the real-time SRE dashboard, inspect the Causal Evidence Graph, and test the **Judge Red-Team Attack Lab**.
-
----
-
-## 🏆 Hackathon Track Alignment & Submission Assets
-
-| Track | Target Prize | TrueSentry Implementation & Submission Asset |
-| :--- | :--- | :--- |
-| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Deep TrueForge Harness integration: [`docs/TRUEFORGE_CAPABILITY_MATRIX.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/TRUEFORGE_CAPABILITY_MATRIX.md), `TrueForgeRuntimePanel`, 4 native MCP servers, subagent swarm, OS sandbox, durable session WAL, and cryptographic HITL. |
-| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Detailed engineering architecture in [`CODE_QUALITY.md`](file:///c:/Users/vidwa/HACK/trueforge/CODE_QUALITY.md) + Full PR audit trail in [`QODO_REVIEW_EVIDENCE.md`](file:///c:/Users/vidwa/HACK/trueforge/QODO_REVIEW_EVIDENCE.md) (17 Merged PRs). |
-| **Savile Row Track** | **Apple iPad** *(for each team member)* | Next.js 14 SRE Command Center with real-time SSE streaming, `AgentStateHeader` ("Now / Next / Waiting For"), clickable **Causal Evidence Graph**, and **Judge Red-Team Attack Lab**. |
-| **Field Report Track** | **Keychron Mechanical Keyboard** | In-depth technical case study: [`docs/BLOG_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/BLOG_POST.md) (*"The AI Agent Was Compromised. Production Wasn't."*). |
-| **Top Social Posts** | **Hackathon Swag & Community Showcase** | 5-post attack campaign and 30-second attack video breakdown in [`docs/SOCIAL_POST.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SOCIAL_POST.md). |
-| **Judge Defense & Scorecard** | **Hostile Q&A & Category Audit** | Technical defense in [`docs/HOSTILE_JUDGE_QA.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/HOSTILE_JUDGE_QA.md) + Full rubric audit in [`docs/SCORECARD_AND_PRIZE_AUDIT.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/SCORECARD_AND_PRIZE_AUDIT.md). |
 
 ---
 

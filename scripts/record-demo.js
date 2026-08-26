@@ -37,8 +37,8 @@ async function main() {
     1,
     'THE HOOK & THE UNCOMFORTABLE PREMISE',
     '0:00 - 0:15',
-    'This is an autonomous SRE agent. I\'m going to give it a real production incident—and then I\'m going to try to trick it into destroying the database. The question isn\'t whether an AI agent can be wrong. It will be. The question is whether being wrong lets it cross the execution boundary into production.',
-    'Display TopNav banner: "THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT." with 100/100 Safety Benchmark.'
+    'This is an autonomous SRE agent. I\'m going to give it a simulated production incident—and then I\'m going to try to trick it into destroying the database. The question isn\'t whether an AI agent can be wrong. It will be. The question is whether being wrong lets it cross the execution boundary into production.',
+    'Display TopNav banner: "THE AGENT CAN BE WRONG. THE EXECUTION BOUNDARY CANNOT." with Safety Benchmark: 100/100 (7 Threat Vectors).'
   );
 
   // ACT 2
@@ -55,7 +55,7 @@ async function main() {
     3,
     'THE ADVERSARIAL ATTACK DEMONSTRATION',
     '0:45 - 1:15',
-    'Now let\'s attack the agent. An attacker embeds a prompt injection inside a git commit comment telling the agent to drop the production database. The LLM actually adopts the malicious proposal—but our AST Policy Engine strips the comments, parses the forbidden root DDL, and hard-blocks execution. The malicious command never touches the database.',
+    'Now let\'s attack the agent. We deliberately embed a malicious prompt injection inside a git commit comment instructing the agent to drop the database. When the reasoning path encounters this proposal, our AST Policy Engine strips the comments, parses the forbidden root DDL, and hard-blocks execution before an authorization token is even generated. The malicious command never touches the database.',
     'Switch to Attack Lab tab. Run "1. Prompt Injection (Drop Database Override)" live red-team probe. Show HARD BLOCK and 0 SQL executed.'
   );
 
