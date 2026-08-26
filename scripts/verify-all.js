@@ -1,11 +1,11 @@
 /**
  * TrueSentry Master Verification & Adversarial Security Runner
- * Validates all hackathon readiness, sandbox security, prompt injection, and cryptographic HITL criteria.
+ * Validates all hackathon readiness, sandbox security, prompt injection, cryptographic HITL, and graph causality criteria.
  */
 const { execSync } = require('child_process');
 
 console.log('\n==================================================================');
-console.log('🛡️  TRUESENTRY: MASTER 11-POINT ADVERSARIAL & SECURITY RUNNER');
+console.log('🛡️  TRUESENTRY: MASTER 12-POINT ADVERSARIAL & SECURITY RUNNER');
 console.log('==================================================================\n');
 
 const tests = [
@@ -38,19 +38,23 @@ const tests = [
     cmd: 'npx vitest run packages/core/tests/dynamic_autonomy_matrix.test.ts',
   },
   {
-    name: '8. Adversarial Chaos Matrix (Memory Leak, Failure Abort, Tampering)',
+    name: '8. Evidence Graph Cryptographic Provenance & Causality Invariant Suite',
+    cmd: 'npx vitest run packages/core/tests/evidence_graph_integrity.test.ts',
+  },
+  {
+    name: '9. Adversarial Chaos Matrix (Memory Leak, Failure Abort, Tampering)',
     cmd: 'npx vitest run packages/core/tests/adversarial.test.ts',
   },
   {
-    name: '9. MCP Protocol Telemetry Servers (Prometheus, Postgres, GitHub, Slack)',
+    name: '10. MCP Protocol Telemetry Servers (Prometheus, Postgres, GitHub, Slack)',
     cmd: 'npx vitest run packages/mcp-servers/tests/mcp.test.ts',
   },
   {
-    name: '10. Full End-to-End Autonomous Incident Response Lifecycle',
+    name: '11. Full End-to-End Autonomous Incident Response Lifecycle',
     cmd: 'npx vitest run packages/core/tests/e2e.test.ts',
   },
   {
-    name: '11. TrueSentry 100-Point Internal Adversarial Safety Benchmark (7 Threat Vectors)',
+    name: '12. TrueSentry 100-Point Internal Adversarial Safety Benchmark (7 Threat Vectors)',
     cmd: 'npx vitest run packages/core/tests/security_benchmark.test.ts',
   },
 ];

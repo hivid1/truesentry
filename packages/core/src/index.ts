@@ -2,6 +2,7 @@ export * from "./types.js";
 export * from "./hitl/blastRadius.js";
 export * from "./hitl/gate.js";
 export * from "./hitl/policies.js";
+export * from "./hitl/graph_validator.js";
 export * from "./events/emitter.js";
 export * from "./storage/db.js";
 export * from "./storage/merkle.js";

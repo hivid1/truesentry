@@ -8,64 +8,71 @@
 
 ---
 
-## 🎯 The High-Stakes Problem
-When high-severity production alerts trigger at 2:00 AM (e.g. checkout HTTP 500 error spikes):
-- Traditional human on-call engineers take **30 to 60 minutes** to wake up, parse logs, isolate commits, and deploy fixes.
-- Unconstrained AI agents are too risky: an unverified rollback or hallucinated SQL command could lock tables further or corrupt live customer data.
+## 🎯 The Core Architectural Thesis
 
-## 🛡️ The TrueSentry Architecture
-**TrueSentry** combines dynamic LLM tool-calling with the **TrueForge Agent Harness** to provide safe, automated incident investigation:
+> **"TrueSentry doesn't assume the agent is trustworthy. It makes the execution boundary trustworthy."**
+> 
+> *Key Invariant: Untrusted investigation data cannot directly cross the authorization boundary into execution.*
 
-1. **Model Context Protocol (MCP) Telemetry**: Interacts with Prometheus error-rate metrics, PostgreSQL lock telemetry (`pg_locks`), and GitHub deployment history via standard Model Context Protocol (MCP) tools.
-2. **Real Isolated Sandbox & Git Bisect**: Creates an isolated OS-process sandbox directory (`packages/sandbox/src/runtime.ts`), executes child processes with `shell: false` (`execSafe`), applies default outbound network blackholing (`HTTP_PROXY=http://127.0.0.1:0`), enforces 30s execution timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
-3. **Iterative Self-Correction Loop**: Executes unit and concurrency regression suites inside the isolated sandbox process, refining blocking DDL into non-blocking concurrent statements until all test assertions pass.
-4. **Cryptographically Bound HITL Safety Gate**: TrueForge halts execution before state-modifying actions. The system computes a **SHA-256 payload digest** over `(sessionId + incidentId + actionType + target + sql + sandboxProof)` and issues a single-use token upon human approval. Kernel-level atomic lockfiles (`fs.openSync(..., 'wx')`) prevent cross-process replay race conditions. Any SQL tampering or replay attempt is rejected.
-5. **Multi-Agent Workflow**: Delegates specialized tasks across dedicated workers (*Telemetry Scout*, *Sandbox Bisector*, *Blast-Radius Auditor*, and *Post-Mortem Scribe*).
+When production outages strike at 2:00 AM, unconstrained AI agents pose severe risks: a hallucinated query or prompt-injected instruction could corrupt databases or exacerbate downtime. TrueSentry demonstrates that **an LLM can be intelligent, autonomous, and potentially untrusted during investigation**, while its **execution boundary remains deterministically constrained by Policy-as-Code and Cryptographic Human-in-the-Loop authorization**.
+
+---
+
+## 📊 The Dynamic Causal Evidence Graph
+
+Instead of presenting disjointed logs, TrueSentry structures all investigation telemetry into an **auditable, cryptographic Causal Evidence Graph** emitted over SSE in real-time (`EVIDENCE_GRAPH_UPDATE`) and verified against causality invariants:
 
 ```mermaid
 graph TD
-    ALERT[🚨 02:14 AM Alert: Checkout 500 Spike] --> HARNESS[TrueForge Harness Runtime]
-    
-    subgraph "Phase 1: Autonomous Diagnostics"
-        HARNESS -->|Prometheus MCP| METRICS[Trace 500 Error Spike]
-        HARNESS -->|Postgres MCP| LOCKS[Detect Exclusive Table Lock on 'orders']
-        HARNESS -->|GitHub MCP| DEPLOY[Correlate Alert with Recent Migration Deploy]
-    end
-    
-    subgraph "Phase 2: Real Sandbox Bisect & Verification"
-        HARNESS --> SANDBOX[Isolated OS Process Sandbox]
-        SANDBOX --> BISECT[Real Git Bisect: Discovers Faulty Migration Commit]
-        SANDBOX --> TEST[Self-Correction Loop: Test Concurrent Patch in Sandbox Process]
-    end
-    
-    subgraph "Phase 3: Cryptographic Human-in-the-Loop Gate"
-        TEST --> HASH[Compute SHA-256 Digest of Remediation Payload]
-        HASH --> PAUSE[🛑 TrueForge Halts Execution & Renders Approval Card]
-        PAUSE --> SRE[Human SRE Reviews Diff & Grants Single-Use Nonce]
-    end
-    
-    subgraph "Phase 4: Verified Execution & Recovery"
-        SRE --> EXEC[Execute Verified SQL via Postgres MCP Server]
-        EXEC --> VERIFY[Prometheus Verification: Queries Post-Remediation Recovery]
-        VERIFY --> POSTMORTEM[Publish Post-Mortem Dossier with Merkle Audit Tree]
-    end
+    A["🚨 02:14 AM Outage Alert<br/><code>ALERTS{alertname='Checkout500'}</code>"] -->|triggers| B["📈 Prometheus Metric Anomaly<br/><code>rate(http_requests_total[5m]) = 38.4%</code>"]
+    B -->|correlates_to| C["🔒 PostgreSQL Lock Contention<br/><code>SELECT * FROM pg_locks</code>"]
+    C -->|introduced_in| D["📦 GitHub Deployment<br/><code>049_add_orders_user_fk.sql</code>"]
+    D -->|isolated_by| E["🔍 Physical Git Bisect<br/><code>git bisect start HEAD good_sha</code>"]
+    E -->|reproduced_in| F["📦 TrueForge OS Sandbox<br/><code>48/48 Concurrency Tests Passed</code>"]
+    F -->|confirms| G["🎯 ROOT CAUSE CONFIRMED<br/><code>AccessExclusiveLock Contention</code>"]
+    G -->|requires_approval| H["🔐 Cryptographic HITL Gate<br/><code>SHA-256 Digest Bound Token</code>"]
+    H -->|authorizes_execution| I["⚡ Atomic CAS Remediation<br/><code>CREATE INDEX CONCURRENTLY</code>"]
+    I -->|restores_health| J["✅ Independent Recovery Re-Query<br/><code>rate(http_requests_total[1m]) = 0.00%</code>"]
+
+    classDef incident fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#fee2e2;
+    classDef telemetry fill:#4c0519,stroke:#f43f5e,stroke-width:2px,color:#ffe4e6;
+    classDef git fill:#083344,stroke:#06b6d4,stroke-width:2px,color:#ecfeff;
+    classDef sandbox fill:#172554,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef crypto fill:#3b0764,stroke:#a855f7,stroke-width:2px,color:#faf5ff;
+    classDef recovery fill:#022c22,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+
+    class A incident;
+    class B,C telemetry;
+    class D,E git;
+    class F,G sandbox;
+    class H crypto;
+    class I,J recovery;
 ```
+
+---
+
+## 🛡️ Four-Tier Truthfulness & Honesty Framework
+
+| Category | Precise Definition | Verification Reference |
+| :--- | :--- | :--- |
+| **1. Proven by Tests** | Deterministically validated across 12 automated verification suites (100% passing in CI). | `npm run verify` (`scripts/verify-all.js`) |
+| **2. Architectural Invariants** | Structural properties guaranteed by the harness pipeline regardless of LLM reasoning (*"Untrusted investigation data cannot cross the authorization boundary"*). | [`packages/core/src/hitl/graph_validator.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/src/hitl/graph_validator.ts) |
+| **3. Environment-Dependent** | Process-level environment proxy blackholing on bare OS hosts (`HTTP_PROXY=http://127.0.0.1:0`); full kernel network namespace isolation (`--network none`) when running in container runtimes. | [`docs/LIMITATIONS_AND_BOUNDARIES.md`](file:///c:/Users/vidwa/HACK/trueforge/docs/LIMITATIONS_AND_BOUNDARIES.md) |
+| **4. Not Claimed** | We do **not** claim that an LLM itself cannot be cognitively manipulated by prompt injection. We prove that cognitive manipulation cannot breach the downstream policy and cryptographic execution gates. | [`packages/core/tests/evil_repository.test.ts`](file:///c:/Users/vidwa/HACK/trueforge/packages/core/tests/evil_repository.test.ts) |
 
 ---
 
 ## 🛡️ Internal Adversarial Safety Benchmark: 100/100
 
-TrueSentry evaluates its execution guardrails across 7 defined threat vectors (`npm run verify`):
+> *Note: This is TrueSentry's internal 7-vector adversarial evaluation benchmark, not a universal industry certification.*
 
 1. **Prompt Injection Resistance**: Dangerous DDL (`DROP DATABASE`, unconstrained `DELETE/UPDATE`) embedded in instructions is hard-blocked.
 2. **Cryptographic Tamper Defense**: Payloads mutated after human sign-off fail SHA-256 validation.
-3. **Anti-Replay & Atomic Single-Use**: OS kernel locks prevent concurrent token reuse across processes.
+3. **Anti-Replay & Atomic Single-Use**: Atomic filesystem CAS (`O_CREAT | O_EXCL` via `fs.openSync(..., 'wx')`) prevents concurrent token reuse across processes.
 4. **Cross-Context Substitution**: Approvals cannot be transposed across incidents or sessions.
 5. **Zero-Shell Execution (`execSafe`)**: Subprocesses run with `shell: false`, rendering command injection strings inert.
 6. **Path Confinement & Null-Byte Defense**: Path traversal (`../../`), symlink escapes, and Windows DOS devices are rejected.
 7. **Environment Host Secret Redaction**: Production credentials and API keys are scrubbed before child process execution.
-
-> **Key Architectural Invariant**: *Untrusted investigation data cannot directly cross the authorization boundary into execution.*
 
 ---
 
@@ -74,31 +81,28 @@ TrueSentry evaluates its execution guardrails across 7 defined threat vectors (`
 ### Prerequisites
 - Node.js >= 20.x
 
-### Run the Master Verification (All 11 Criteria)
+### Run the Master Verification (All 12 Criteria)
 ```bash
-# Clone using GitHub CLI:
-gh repo clone hivid1/truesentry
-
-# Or clone via HTTPS:
+# Clone the repository:
 git clone https://github.com/hivid1/truesentry.git
-
-# Install, build, and verify all 11 criteria in one command:
 cd truesentry
+
+# Install, build, and verify all 12 criteria in one command:
 npm install
 npm run build
 npm run verify
 ```
 
-### Run the Interactive Demo
+### Run the 3-Minute Demo Runner & Teleprompter
+```bash
+npm run demo:record
+```
+
+### Run the Interactive SRE Operations Command Center
 ```bash
 npm run demo
 ```
-Open **http://localhost:3000** to access the SRE Operations Command Center.
-
-### Run the Automated Test Suite
-```bash
-npm test
-```
+Open **http://localhost:3000** to access the real-time SRE dashboard.
 
 ---
 
@@ -127,9 +131,9 @@ truesentry/
 
 | Track | Target Prize | TrueSentry Implementation |
 | :--- | :--- | :--- |
-| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | TrueForge-driven orchestration: 4 MCP servers, OS process sandboxing, physical Git bisecting, and cryptographically bound HITL gates. |
+| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | TrueForge-driven orchestration: 4 MCP servers, OS process sandboxing, physical Git bisecting, causal evidence graph, and cryptographically bound HITL gates. |
 | **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | PR-driven development with Qodo AI reviews, composite TypeScript project references, strict input schemas, and 100% test pass. |
-| **Savile Row Track** | **Apple iPad** *(for each team member)* | Real-time tactical SRE dashboard with live SSE thought streaming, xterm.js sandbox terminal, microservice topology DAG, and Monaco SQL diff viewer. |
+| **Savile Row Track** | **Apple iPad** *(for each team member)* | Real-time tactical SRE dashboard with live SSE thought streaming, clickable Causal Evidence Graph with cryptographic provenance, and xterm.js terminal. |
 | **Field Report** | **Keychron Mechanical Keyboard** | In-depth technical write-up covering failure modes, sandboxing guarantees, and benchmark evaluations. |
 
 ---

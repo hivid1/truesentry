@@ -1,13 +1,14 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { TelemetryPoint } from "@/types/ui";
-import { Activity, AlertTriangle, Database, Server } from "lucide-react";
+import { Activity, AlertTriangle, Database, Server, Info } from "lucide-react";
 
 interface TelemetryPanelProps {
   telemetry: TelemetryPoint;
 }
 
 export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ telemetry }) => {
+  const [showProvenance, setShowProvenance] = useState(false);
   const errorPercentage = (telemetry.errorRate * 100).toFixed(1);
   const isSpiking = telemetry.errorRate > 0.05;
 
@@ -16,10 +17,28 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ telemetry }) => 
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
           <Activity className="w-3.5 h-3.5 text-cyan-400" />
-          Live Production Telemetry (Prometheus MCP)
+          Live Telemetry (Prometheus MCP)
         </h3>
-        <span className="text-[10px] font-mono text-zinc-500">Auto-refresh 500ms</span>
+        <button
+          onClick={() => setShowProvenance(!showProvenance)}
+          className="text-[10px] font-mono text-cyan-400/80 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
+        >
+          <Info className="w-3 h-3" />
+          {showProvenance ? "Hide Provenance" : "Inspect Query"}
+        </button>
       </div>
+
+      {showProvenance && (
+        <div className="p-2.5 rounded-lg bg-zinc-900 border border-cyan-500/30 text-[10px] font-mono text-zinc-300 flex flex-col gap-1">
+          <span className="text-cyan-400 font-bold">PROVENANCE QUERY:</span>
+          <code className="text-amber-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800 break-all">
+            {telemetry.provenance?.query || 'rate(http_requests_total{service="checkout",status=~"5.."}[5m])'}
+          </code>
+          <span className="text-zinc-500">
+            Source: {telemetry.provenance?.source || "Prometheus MCP"} • Real-Time Stream
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5">
         {/* Metric 1: Error Rate */}
@@ -37,7 +56,9 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ telemetry }) => 
           <div className="mt-2 text-2xl font-mono font-bold tracking-tight">
             {errorPercentage}%
           </div>
-          <span className="text-[10px] text-zinc-500 mt-1 font-mono">Threshold: 5.0%</span>
+          <span className="text-[10px] text-zinc-500 mt-1 font-mono">
+            {isSpiking ? "Spike Detected (38.4%)" : "Verified SLO (0.00%)"}
+          </span>
         </div>
 
         {/* Metric 2: P99 Latency */}

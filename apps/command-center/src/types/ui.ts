@@ -43,4 +43,9 @@ export interface TelemetryPoint {
   p99LatencyMs: number;
   activeLocks: number;
   runningPods: number;
+  provenance?: {
+    source: string;
+    query: string;
+    queryTimestamp: number;
+  };
 }
