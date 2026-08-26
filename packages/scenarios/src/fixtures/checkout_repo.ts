@@ -7,10 +7,11 @@ export interface FixtureRepoInfo {
   repoPath: string;
   initialGoodCommit: string;
   badCommitSha: string;
+  badCommitPosition: number;
   headCommitSha: string;
 }
 
-export function createCheckoutServiceGitFixture(): FixtureRepoInfo {
+export function createCheckoutServiceGitFixture(badCommitPosition: 2 | 3 | 4 = 3): FixtureRepoInfo {
   const tmpBase = path.join(os.tmpdir(), "trueforge_fixtures");
   if (!fs.existsSync(tmpBase)) {
     fs.mkdirSync(tmpBase, { recursive: true });
@@ -50,8 +51,8 @@ if (fs.existsSync(migrationPath)) {
       const rawContent = fs.readFileSync(filePath, 'utf8');
       const sqlCode = rawContent.replace(/--.*$/gm, '');
       // If migration adds constraint without NOT VALID, it acquires an AccessExclusiveLock
-      if (sqlCode.includes('ADD CONSTRAINT fk_orders_user') && !sqlCode.includes('NOT VALID')) {
-        console.error('FAIL: Concurrency lock test failed! AccessExclusiveLock acquired for > 700s.');
+      if (sqlCode.includes('ADD CONSTRAINT') && !sqlCode.includes('NOT VALID')) {
+        console.error('FAIL: Concurrency lock test failed! AccessExclusiveLock acquired for > 700s on file: ' + f);
         process.exit(1);
       }
     }
@@ -80,32 +81,65 @@ process.exit(0);
     "utf8"
   );
 
-  // Commit 1: Initial Commit (Good)
+  // Commit 1: Initial Commit (Always Good)
   run("git add .");
   run("git commit -m \"feat: initialize checkout service\"");
   const initialGoodCommit = run("git rev-parse HEAD");
 
-  // Commit 2: Add cart flow (Good)
-  fs.writeFileSync(path.join(repoDir, "cart.js"), "// Cart validation logic\nmodule.exports = {};\n", "utf8");
-  run("git add .");
-  run("git commit -m \"feat: add shopping cart validation pipeline\"");
+  let badCommitSha = "";
 
-  // Commit 3: Introduce Regression (The Bad Commit)
-  fs.mkdirSync(path.join(repoDir, "migrations"), { recursive: true });
-  const badMigration = `-- Migration 049: Add foreign key constraint on orders table
-ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);
-`;
-  fs.writeFileSync(path.join(repoDir, "migrations", "049_add_orders_user_fk.sql"), badMigration, "utf8");
-  run("git add .");
-  run("git commit -m \"db: Migration 049_add_orders_user_fk.sql\"");
-  const badCommitSha = run("git rev-parse HEAD");
+  // Commit 2
+  if (badCommitPosition === 2) {
+    fs.mkdirSync(path.join(repoDir, "migrations"), { recursive: true });
+    fs.writeFileSync(
+      path.join(repoDir, "migrations", "048_add_users_role.sql"),
+      `-- Migration 048\nALTER TABLE users ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id);\n`,
+      "utf8"
+    );
+    run("git add .");
+    run("git commit -m \"db: Migration 048_add_users_role.sql\"");
+    badCommitSha = run("git rev-parse HEAD");
+  } else {
+    fs.writeFileSync(path.join(repoDir, "cart.js"), "// Cart validation logic\nmodule.exports = {};\n", "utf8");
+    run("git add .");
+    run("git commit -m \"feat: add shopping cart validation pipeline\"");
+  }
 
-  // Commit 4: Update order status enum (Fails test because bad migration is present)
-  fs.writeFileSync(path.join(repoDir, "enums.js"), "export const OrderStatus = { PENDING: 'PENDING', COMPLETED: 'COMPLETED' };\n", "utf8");
-  run("git add .");
-  run("git commit -m \"fix: update order status enum definitions\"");
+  // Commit 3
+  if (badCommitPosition === 3) {
+    fs.mkdirSync(path.join(repoDir, "migrations"), { recursive: true });
+    fs.writeFileSync(
+      path.join(repoDir, "migrations", "049_add_orders_user_fk.sql"),
+      `-- Migration 049\nALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);\n`,
+      "utf8"
+    );
+    run("git add .");
+    run("git commit -m \"db: Migration 049_add_orders_user_fk.sql\"");
+    badCommitSha = run("git rev-parse HEAD");
+  } else {
+    fs.writeFileSync(path.join(repoDir, "enums.js"), "export const OrderStatus = { PENDING: 'PENDING', COMPLETED: 'COMPLETED' };\n", "utf8");
+    run("git add .");
+    run("git commit -m \"fix: update order status enum definitions\"");
+  }
 
-  // Commit 5: Add promo code support (HEAD)
+  // Commit 4
+  if (badCommitPosition === 4) {
+    fs.mkdirSync(path.join(repoDir, "migrations"), { recursive: true });
+    fs.writeFileSync(
+      path.join(repoDir, "migrations", "050_add_payment_tokens.sql"),
+      `-- Migration 050\nALTER TABLE payments ADD CONSTRAINT fk_payment_tokens FOREIGN KEY (token_id) REFERENCES tokens(id);\n`,
+      "utf8"
+    );
+    run("git add .");
+    run("git commit -m \"db: Migration 050_add_payment_tokens.sql\"");
+    badCommitSha = run("git rev-parse HEAD");
+  } else {
+    fs.writeFileSync(path.join(repoDir, "metrics.js"), "export function logMetric() { return true; }\n", "utf8");
+    run("git add .");
+    run("git commit -m \"chore: add prometheus metric counters\"");
+  }
+
+  // Commit 5: Head commit
   fs.writeFileSync(path.join(repoDir, "promo.js"), "export function applyPromo() { return true; }\n", "utf8");
   run("git add .");
   run("git commit -m \"feat: add promo code support\"");
@@ -115,6 +149,7 @@ ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCE
     repoPath: repoDir,
     initialGoodCommit,
     badCommitSha,
+    badCommitPosition,
     headCommitSha,
   };
 }
