@@ -4,59 +4,61 @@
 [![CI](https://github.com/hivid1/truesentry/actions/workflows/ci.yml/badge.svg)](https://github.com/hivid1/truesentry/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TrueForge: 0.1.4](https://img.shields.io/badge/TrueForge-0.1.4-cyan.svg)](https://github.com/truefoundry/trueforge)
-[![Qodo: Verified](https://img.shields.io/badge/Qodo-Code%20Quality%20Audited-green.svg)](https://www.qodo.ai)
+[![Qodo: Audited](https://img.shields.io/badge/Qodo-PR%20Audited-green.svg)](https://www.qodo.ai)
 
 ---
 
 ## 🎯 The High-Stakes Problem
-When production alerts trigger at 2:00 AM (e.g. checkout HTTP 500 error spikes):
-- Traditional human on-call engineers take **30 to 60 minutes** to wake up, trace logs, reproduce issues, and deploy fixes.
-- Unconstrained AI agents are too dangerous to trust: a single hallucination could run `DROP TABLE` or execute an unverified rollback that wipes out live customer data.
+When high-severity production alerts trigger at 2:00 AM (e.g. checkout HTTP 500 error spikes):
+- Traditional human on-call engineers take **30 to 60 minutes** to wake up, parse logs, isolate commits, and deploy fixes.
+- Unconstrained AI agents are too risky: an unverified rollback or hallucinated SQL command could lock tables further or wipe out live customer records.
 
-## 🛡️ The TrueSentry Solution
-**TrueSentry** is an autonomous Site Reliability Engineering (SRE) agent powered by the **TrueForge Agent Harness**:
-1. **Model Context Protocol (MCP)**: Queries live Prometheus metrics, PostgreSQL table locks (`pg_locks`), and GitHub deployment logs.
-2. **Isolated Sandbox Execution**: Spins up a TrueForge isolated container sandbox, runs automated `git bisect` to pinpoint the failing commit, and reproduces the error safely.
-3. **Human-in-the-Loop (HITL) Gated Pause**: TrueForge halts execution before any state-modifying action (e.g. database rollback), presenting a detailed **Blast-Radius & Approval Card** with verified SQL diffs and 0-data-loss proofs.
-4. **Subagent Swarms**: Distributes investigation across specialized workers: *Telemetry Scout*, *Sandbox Bisector*, *Blast-Radius Auditor*, and *Post-Mortem Scribe*.
+## 🛡️ The TrueSentry Architecture
+**TrueSentry** combines dynamic LLM tool-calling with the **TrueForge Agent Harness** to provide safe, automated incident investigation:
+
+1. **Model Context Protocol (MCP) Telemetry**: Queries Prometheus error-rate metrics, PostgreSQL lock telemetry (`pg_locks`), and GitHub deployment logs.
+2. **Real Isolated Sandbox & Git Bisect**: Spins up an OS-level isolated sandbox directory, executes real child processes with timeouts, and genuinely runs `git bisect` on a multi-commit repository to isolate the faulty migration dynamically.
+3. **Iterative Self-Correction Loop**: Executes tests inside the sandbox against proposed SQL patches, refining blocking DDL into non-blocking concurrent statements until all unit/concurrency tests pass.
+4. **Cryptographically Bound HITL Safety Gate**: TrueForge halts execution before state-modifying actions. The system computes a **SHA-256 payload digest** over `(sessionId + incidentId + actionType + sql + sandboxProof)` and issues a single-use token upon human approval. Any SQL tampering or replay attempt is rejected.
+5. **Multi-Agent Workflow**: Delegates specialized tasks across dedicated workers (*Telemetry Scout*, *Sandbox Bisector*, *Blast-Radius Auditor*, and *Post-Mortem Scribe*).
 
 ```mermaid
 graph TD
     ALERT[🚨 02:14 AM Alert: Checkout 500 Spike] --> HARNESS[TrueForge Harness Runtime]
     
     subgraph "Phase 1: Autonomous Diagnostics"
-        HARNESS -->|Prometheus MCP| METRICS[Trace 500 Spike to Deploy #4c21]
+        HARNESS -->|Prometheus MCP| METRICS[Trace 500 Error Spike]
         HARNESS -->|Postgres MCP| LOCKS[Detect Exclusive Table Lock on 'orders']
+        HARNESS -->|GitHub MCP| DEPLOY[Correlate Alert with Recent Migration Deploy]
     end
     
-    subgraph "Phase 2: Safe Sandbox Reproduction"
-        HARNESS --> SANDBOX[TrueForge Isolated Sandbox Container]
-        SANDBOX --> BISECT[Run Git Bisect: Pinpoints Migration 049]
-        SANDBOX --> TEST[Test Concurrent Rollback Patch: 48/48 Tests Pass]
+    subgraph "Phase 2: Real Sandbox Bisect & Verification"
+        HARNESS --> SANDBOX[Isolated OS Process Sandbox]
+        SANDBOX --> BISECT[Real Git Bisect: Discovers Faulty Migration Commit]
+        SANDBOX --> TEST[Self-Correction Loop: Test Concurrent Patch in Sandbox]
     end
     
-    subgraph "Phase 3: The Gated Safety Check"
-        TEST --> PAUSE{Is Action Irreversible?}
-        PAUSE -- Yes (DB Rollback) --> HITL[🛑 TrueForge Pauses Agent Execution]
-        HITL --> UI[Render Interactive Approval Card on Command Center]
-        UI --> SRE[Human SRE Reviews SQL Diff & Clicks 'Approve']
+    subgraph "Phase 3: Cryptographic Human-in-the-Loop Gate"
+        TEST --> HASH[Compute SHA-256 Digest of Remediation Payload]
+        HASH --> PAUSE[🛑 TrueForge Halts Execution & Renders Approval Card]
+        PAUSE --> SRE[Human SRE Reviews Diff & Grants Single-Use Nonce]
     end
     
-    subgraph "Phase 4: Safe Execution & Recovery"
-        SRE --> EXEC[Execute Rollback on Production Database]
-        EXEC --> VERIFY[Prometheus: Error Rate Drops to 0.00%]
-        VERIFY --> POSTMORTEM[Auto-Generate Incident Post-Mortem & Slack Alert]
+    subgraph "Phase 4: Verified Execution & Recovery"
+        SRE --> EXEC[Execute Verified SQL via Postgres MCP Server]
+        EXEC --> VERIFY[Prometheus Verification: Error Rate Normalizes to 0.00%]
+        VERIFY --> POSTMORTEM[Publish Post-Mortem Dossier with Merkle Audit Tree]
     end
 ```
 
 ---
 
-## 🚀 Quickstart (Zero-Config Judge Immersion)
+## 🚀 Quickstart (Zero-Config Setup)
 
 ### Prerequisites
 - Node.js >= 20.x
 
-### Run the Live Demo (One Command)
+### Run the Demo (One Command)
 ```bash
 # Clone using GitHub CLI:
 gh repo clone hivid1/truesentry
@@ -64,7 +66,7 @@ gh repo clone hivid1/truesentry
 # Or clone via HTTPS:
 git clone https://github.com/hivid1/truesentry.git
 
-# Navigate and start the zero-config demo:
+# Install, build, and start the system:
 cd truesentry
 npm install
 npm run build
@@ -72,7 +74,7 @@ npm run demo
 ```
 Open **http://localhost:3000** to access the SRE Operations Command Center.
 
-### Run Automated Test Suite
+### Run the Full Automated Test Suite
 ```bash
 npm test
 ```
@@ -84,39 +86,39 @@ npm test
 ```
 truesentry/
 ├── apps/
-│   └── command-center/       # Next.js 15 App Router Operations Dashboard (Savile Row Winner)
+│   └── command-center/       # Next.js 14 App Router Operations Dashboard
 │
 ├── packages/
-│   ├── cli/                  # Terminal CLI SRE Incident Responder (`truesentry`)
-│   ├── core/                 # TrueForge Agent Harness Server & HITL Gate Engine
-│   ├── mcp-servers/          # 4 Native MCP Servers (Prometheus, Postgres, GitHub, Slack)
-│   ├── sandbox/              # Isolated Sandbox Container Runtime & Git Bisect Runner
-│   └── scenarios/            # 3 Realistic Incident Benchmark Engines & Chaos Injector
+│   ├── cli/                  # Terminal CLI Incident Responder (`truesentry`)
+│   ├── core/                 # TrueForge Agent Harness Coordinator, SSE Server, & HITL Gate
+│   ├── mcp-servers/          # Native MCP Servers (Prometheus, Postgres, GitHub, Slack)
+│   ├── sandbox/              # Isolated OS Process Sandbox Runtime & Dynamic Git Bisector
+│   └── scenarios/            # Scenario Benchmarks & Physical Git Fixture Generators
 │
-├── .qodo/config.yaml         # Qodo AI Code Quality & Security Enforcer (Q Branch Winner)
-├── .qodo.toml                # Qodo Configuration File
-└── .github/workflows/ci.yml  # 100% Type-Safe Automated CI Pipeline
+├── .qodo/config.yaml         # Qodo AI Code Quality Configuration
+├── .qodo.toml                # Qodo Workspace Rules
+└── .github/workflows/ci.yml  # Automated CI Pipeline (Build, Typecheck, Test)
 ```
 
 ---
 
-## 🏆 Prize Track Alignment
+## 🏆 Hackathon Track Alignment
 
-| Track | Prize | TrueSentry Implementation |
+| Track | Target Prize | TrueSentry Implementation |
 | :--- | :--- | :--- |
-| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | Harness-level orchestration with 4 live MCP servers, isolated sandbox execution, cryptographic HITL approval gates, and multi-agent delegation. |
-| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | Full Qodo configuration, PR-driven development workflow, clean modular architecture, and 100% test coverage. |
-| **Savile Row Track** | **Apple iPad** *(for each team member)* | Real-time SRE Command Center with live SSE agent thought streams, xterm.js sandbox terminal, React Flow swarm graphs, and Monaco SQL diff viewer. |
-| **Field Report** | **Keychron Mechanical Keyboard** | Comprehensive architectural write-up, failure mode analysis (FMEA), and benchmark evaluation. |
+| **Double-O Track** *(TrueFoundry)* | **NVIDIA DGX Spark** ($5,000 AI Supercomputer) | TrueForge-driven orchestration: 4 MCP servers, OS process sandboxing, physical Git bisecting, and cryptographically bound HITL gates. |
+| **Q Branch Track** *(Qodo)* | **Apple Mac Mini** ($1,000) | PR-driven development with Qodo AI reviews, composite TypeScript project references, strict input schemas, and 100% test pass. |
+| **Savile Row Track** | **Apple iPad** *(for each team member)* | Real-time tactical SRE dashboard with live SSE thought streaming, xterm.js sandbox terminal, microservice topology DAG, and Monaco SQL diff viewer. |
+| **Field Report** | **Keychron Mechanical Keyboard** | In-depth technical write-up covering failure modes, sandboxing guarantees, and benchmark evaluations. |
 
 ---
 
 ## 🔍 Qodo Code Review Evidence
 
-As required by the **Q Branch Track** judging criteria, all substantive changes in TrueSentry were developed through pull requests audited by **Qodo AI**:
+As required by the **Q Branch Track** judging criteria, all substantive code modifications were developed through Pull Requests reviewed by **Qodo AI**:
 
-- **Representative Pull Request**: [PR #1: Initialize TrueForge Hero Incident Responder Workflow](https://github.com/hivid1/truesentry/pull/1)
-- **Qodo Audit Summary**: Qodo analyzed the full repository structure, verified strict TypeScript type-safety across all 4 MCP servers, validated Zod schema contracts on tool parameters, and confirmed isolated container timeout safeguards.
+- **Merged Pull Request**: [PR #1: Initialize TrueForge Hero Incident Responder Workflow](https://github.com/hivid1/truesentry/pull/1)
+- **Qodo Audit Summary**: Qodo reviewed the monorepo architecture, verified strict TypeScript type-safety across all packages, validated Zod schemas on tool parameters, and confirmed child process timeout safeguards.
 - **Enforced Standards**: 100% type safety, composite TypeScript project references, zero hardcoded credentials, and passing Vitest test suites.
 
 ---
