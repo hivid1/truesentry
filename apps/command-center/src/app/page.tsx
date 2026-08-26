@@ -13,8 +13,10 @@ import { TopologyMap } from "@/components/TopologyMap";
 import { PostMortemModal } from "@/components/PostMortemModal";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
 import { EvidenceGraphViewer, EvidenceNodeUI } from "@/components/EvidenceGraphViewer";
+import { TrueForgeRuntimePanel } from "@/components/TrueForgeRuntimePanel";
+import { AttackLab } from "@/components/AttackLab";
 import { HitlApprovalRequest, AgentThoughtEvent, TelemetryPoint } from "@/types/ui";
-import { FileText } from "lucide-react";
+import { FileText, ShieldAlert, Cpu, Activity } from "lucide-react";
 
 const HARNESS_URL = "http://localhost:8790";
 
@@ -28,6 +30,7 @@ export default function CommandCenterPage() {
   const [showPostMortem, setShowPostMortem] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [evidenceNodes, setEvidenceNodes] = useState<EvidenceNodeUI[] | undefined>(undefined);
+  const [activeLeftTab, setActiveLeftTab] = useState<"ops" | "attack">("ops");
 
   const [thoughts, setThoughts] = useState<AgentThoughtEvent[]>([]);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
@@ -153,18 +156,64 @@ export default function CommandCenterPage() {
 
       {/* Main 3-Column Tactical Operations Grid */}
       <main className="flex-1 grid grid-cols-12 gap-px bg-zinc-800 overflow-hidden">
-        {/* Column 1: Telemetry, Incident Timeline & Swarm (4 cols) */}
+        {/* Column 1: Telemetry, TrueForge Runtime, Attack Lab & Scenarios (4 cols) */}
         <div className="col-span-4 bg-zinc-950 p-4 flex flex-col gap-3.5 overflow-y-auto border-r border-zinc-800">
-          <TelemetryPanel telemetry={telemetry} />
-          <IncidentTimeline
-            currentStepIndex={currentStepIndex}
-            isPausedAtGate={!!pendingApproval}
-            isResolved={status === "RESOLVED"}
-          />
-          <TopologyMap status={status} />
-          <VoiceWarRoom status={status} incidentTitle={incidentTitle} />
-          <SwarmGraph />
-          <ScenarioSelector onTrigger={triggerIncident} isLoading={isLoading} />
+          {/* View Mode Toggle: Operations vs Attack Lab */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-zinc-900 rounded-lg border border-zinc-800 text-xs font-mono">
+            <button
+              onClick={() => setActiveLeftTab("ops")}
+              className={`py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeLeftTab === "ops"
+                  ? "bg-cyan-600 text-white font-bold shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" /> SRE Operations
+            </button>
+            <button
+              onClick={() => setActiveLeftTab("attack")}
+              className={`py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeLeftTab === "attack"
+                  ? "bg-red-600 text-white font-bold shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5" /> Attack Lab (Red-Team)
+            </button>
+          </div>
+
+          {activeLeftTab === "ops" ? (
+            <>
+              {/* TrueForge Runtime Panel */}
+              <TrueForgeRuntimePanel
+                sessionId={sessionId}
+                status={status}
+                currentStepIndex={currentStepIndex}
+              />
+
+              <TelemetryPanel telemetry={telemetry} />
+              <IncidentTimeline
+                currentStepIndex={currentStepIndex}
+                isPausedAtGate={!!pendingApproval}
+                isResolved={status === "RESOLVED"}
+              />
+              <TopologyMap status={status} />
+              <VoiceWarRoom status={status} incidentTitle={incidentTitle} />
+              <SwarmGraph />
+              <ScenarioSelector onTrigger={triggerIncident} isLoading={isLoading} />
+            </>
+          ) : (
+            <>
+              {/* Dedicated Attack Lab */}
+              <AttackLab />
+              <TrueForgeRuntimePanel
+                sessionId={sessionId}
+                status={status}
+                currentStepIndex={currentStepIndex}
+              />
+              <ScenarioSelector onTrigger={triggerIncident} isLoading={isLoading} />
+            </>
+          )}
 
           {status === "RESOLVED" && (
             <button
