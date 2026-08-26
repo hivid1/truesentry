@@ -1,5 +1,5 @@
 import { SandboxExecResult } from "./types.js";
-import { exec } from "child_process";
+import { exec, spawn, execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -8,6 +8,7 @@ export interface SandboxOptions {
   workingDirectory?: string;
   timeoutMs?: number;
   env?: Record<string, string>;
+  networkDisabled?: boolean;
 }
 
 export class SandboxRuntime {
@@ -28,9 +29,9 @@ export class SandboxRuntime {
     this.timeoutMs = options?.timeoutMs || 30000;
 
     if (options?.workingDirectory && fs.existsSync(options.workingDirectory)) {
-      this.sandboxDir = options.workingDirectory;
+      this.sandboxDir = path.resolve(options.workingDirectory);
     } else {
-      this.sandboxDir = path.join(os.tmpdir(), "trueforge_sandboxes", this.sandboxId);
+      this.sandboxDir = path.resolve(path.join(os.tmpdir(), "trueforge_sandboxes", this.sandboxId));
       if (!fs.existsSync(this.sandboxDir)) {
         fs.mkdirSync(this.sandboxDir, { recursive: true });
       }
@@ -38,7 +39,7 @@ export class SandboxRuntime {
   }
 
   private sanitizeEnv(customEnv?: Record<string, string>): NodeJS.ProcessEnv {
-    const sensitivePattern = /(_KEY|_SECRET|_TOKEN|_PASSWORD|AWS_|GITHUB_|SLACK_|DATABASE_|SUPABASE_)/i;
+    const sensitivePattern = /(_KEY|_SECRET|_TOKEN|_PASSWORD|AWS_|GITHUB_|SLACK_|DATABASE_|SUPABASE_|OPENAI_|ANTHROPIC_|AUTH_|CREDENTIAL_)/i;
     const sanitized: NodeJS.ProcessEnv = {};
 
     for (const [k, v] of Object.entries(process.env)) {
@@ -47,8 +48,19 @@ export class SandboxRuntime {
       }
     }
 
+    // Network isolation flags (blackholing socket routing)
+    const networkFlags: NodeJS.ProcessEnv = {
+      HTTP_PROXY: "http://127.0.0.1:0",
+      HTTPS_PROXY: "http://127.0.0.1:0",
+      ALL_PROXY: "socks5://127.0.0.1:0",
+      NO_PROXY: "",
+      NODE_TLS_REJECT_UNAUTHORIZED: "1",
+      TRUEFORGE_NETWORK_ISOLATED: "true",
+    };
+
     return {
       ...sanitized,
+      ...networkFlags,
       TRUEFORGE_SANDBOX_ID: this.sandboxId,
       NODE_ENV: "test",
       CI: "true",
@@ -56,16 +68,36 @@ export class SandboxRuntime {
     };
   }
 
-  private resolveSafePath(filePath: string): string {
-    const fullPath = path.isAbsolute(filePath)
-      ? path.normalize(filePath)
-      : path.normalize(path.join(this.sandboxDir, filePath));
+  public resolveSafePath(filePath: string): string {
+    // 1. Reject null-byte injection
+    if (filePath.includes("\0")) {
+      throw new Error(`Security Violation: Null byte detected in file path (${filePath})`);
+    }
 
-    const normalizedDir = path.normalize(this.sandboxDir);
-    // Allow access inside sandboxDir or working directory
+    // 2. Reject Windows DOS device names and raw UNC paths
+    if (/^((\\\\[^\\]+)|(\/\/[^\/]+))|\b(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.|$)/i.test(filePath)) {
+      throw new Error(`Security Violation: Forbidden device or UNC path (${filePath})`);
+    }
+
+    const normalizedDir = path.resolve(this.sandboxDir);
+    const fullPath = path.isAbsolute(filePath)
+      ? path.resolve(filePath)
+      : path.resolve(normalizedDir, filePath);
+
+    // 3. Prevent standard traversal outside directory
     if (!fullPath.startsWith(normalizedDir)) {
       throw new Error(`Security Violation: Path traversal escape outside sandbox boundary (${filePath})`);
     }
+
+    // 4. Resolve symlinks if file exists to prevent symlink target escape
+    if (fs.existsSync(fullPath)) {
+      const realPath = fs.realpathSync(fullPath);
+      if (!realPath.startsWith(normalizedDir)) {
+        throw new Error(`Security Violation: Symlink escape outside sandbox boundary (${filePath} -> ${realPath})`);
+      }
+      return realPath;
+    }
+
     return fullPath;
   }
 
@@ -84,9 +116,78 @@ export class SandboxRuntime {
     return fs.readFileSync(fullPath, "utf8");
   }
 
+  /**
+   * Execute command safely with argument array (Zero shell interpolation, prevents injection).
+   */
+  public async execSafe(executable: string, args: string[], customCwd?: string): Promise<SandboxExecResult> {
+    const startTime = Date.now();
+    const cwd = customCwd ? path.resolve(customCwd) : this.sandboxDir;
+
+    const emit = (str: string) => {
+      if (this.onStdoutChunk) {
+        this.onStdoutChunk(str);
+      }
+    };
+
+    emit(`\x1b[36m[TrueForge-Sandbox:${this.sandboxId}]\x1b[0m $ ${executable} ${args.join(" ")}\n`);
+
+    return new Promise((resolve) => {
+      const child = spawn(executable, args, {
+        cwd,
+        timeout: this.timeoutMs,
+        shell: false, // Strict: no shell wrapper, zero metacharacter expansion
+        env: this.sanitizeEnv(this.options?.env),
+      });
+
+      let stdout = "";
+      let stderr = "";
+
+      child.stdout?.on("data", (data) => {
+        const str = data.toString();
+        stdout += str;
+        emit(str);
+      });
+
+      child.stderr?.on("data", (data) => {
+        const str = data.toString();
+        stderr += str;
+        emit(`\x1b[33m${str}\x1b[0m`);
+      });
+
+      child.on("error", (err) => {
+        stderr += err.message;
+      });
+
+      child.on("close", (code) => {
+        const durationMs = Date.now() - startTime;
+        let exitCode = code ?? 0;
+
+        if (child.killed) {
+          exitCode = 124;
+          const timeoutMsg = `[Sandbox-Timeout] Process exceeded execution limit of ${this.timeoutMs}ms\n`;
+          stderr += timeoutMsg;
+          emit(`\x1b[31m${timeoutMsg}\x1b[0m`);
+        }
+
+        if (exitCode === 0) {
+          emit(`\x1b[32m✓ Process finished (exit: 0, ${durationMs}ms)\x1b[0m\n`);
+        } else {
+          emit(`\x1b[31m✗ Process failed (exit: ${exitCode}, ${durationMs}ms)\x1b[0m\n`);
+        }
+
+        resolve({
+          exitCode,
+          stdout,
+          stderr,
+          durationMs,
+        });
+      });
+    });
+  }
+
   public async exec(command: string, customCwd?: string): Promise<SandboxExecResult> {
     const startTime = Date.now();
-    const cwd = customCwd || this.sandboxDir;
+    const cwd = customCwd ? path.resolve(customCwd) : this.sandboxDir;
 
     const emit = (str: string) => {
       if (this.onStdoutChunk) {
@@ -113,6 +214,8 @@ export class SandboxRuntime {
 
           if (error && error.killed) {
             exitCode = 124;
+            // Tree kill to clean up any orphaned descendants
+            this.killProcessTree(child.pid);
             const timeoutMsg = `[Sandbox-Timeout] Process exceeded execution limit of ${this.timeoutMs}ms\n`;
             errStr += timeoutMsg;
             emit(`\x1b[31m${timeoutMsg}\x1b[0m`);
@@ -136,6 +239,19 @@ export class SandboxRuntime {
         }
       );
     });
+  }
+
+  private killProcessTree(pid?: number): void {
+    if (!pid) return;
+    try {
+      if (process.platform === "win32") {
+        execSync(`taskkill /pid ${pid} /T /F`, { stdio: "ignore" });
+      } else {
+        process.kill(-pid, "SIGKILL");
+      }
+    } catch {
+      // Process already terminated
+    }
   }
 
   public cleanup(): void {
